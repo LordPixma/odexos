@@ -116,3 +116,33 @@ export function EditIcon({ className = "", size = 16 }: IconProps) {
     </svg>
   );
 }
+
+export function BankIcon({ className = "", size = 18 }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path d="M3 9.5 12 4l9 5.5" />
+      <path d="M5 10v8M9 10v8M15 10v8M19 10v8" />
+      <path d="M3 21h18" />
+    </svg>
+  );
+}
+
+export function RefreshIcon({ className = "", size = 16 }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path d="M20 11a8 8 0 0 0-14-4.5L4 8" />
+      <path d="M4 4v4h4" />
+      <path d="M4 13a8 8 0 0 0 14 4.5L20 16" />
+      <path d="M20 20v-4h-4" />
+    </svg>
+  );
+}
+
+export function LinkIcon({ className = "", size = 16 }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1.5 1.5" />
+      <path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1.5-1.5" />
+    </svg>
+  );
+}

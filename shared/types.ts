@@ -113,7 +113,9 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 // Liabilities count against net worth.
 export const LIABILITY_ACCOUNT_TYPES: AccountType[] = ["credit"];
 
-export type AccountProvider = "manual" | "truelayer" | "plaid";
+// Providers that can be connected for automatic syncing.
+export type BankProviderId = "truelayer" | "plaid" | "mock";
+export type AccountProvider = "manual" | BankProviderId;
 
 export interface Account {
   id: string;
@@ -124,9 +126,35 @@ export interface Account {
   balanceCents: number;
   currency: string;
   provider: AccountProvider;
+  connectionId: string | null; // set when the account is bank-synced
   ownerMemberId: string | null;
   lastSyncedAt: string | null;
   createdAt: string;
+}
+
+export type BankConnectionStatus = "active" | "error" | "revoked";
+
+export interface BankConnection {
+  id: string;
+  provider: BankProviderId;
+  displayName: string;
+  status: BankConnectionStatus;
+  lastSyncedAt: string | null;
+  lastError: string | null;
+  accountCount: number;
+  createdAt: string;
+}
+
+/** Returned by the "start link" endpoint — the browser navigates here. */
+export interface LinkStartResponse {
+  authUrl: string;
+}
+
+/** Result of a sync operation. */
+export interface SyncResult {
+  connections: number;
+  accountsUpdated: number;
+  accountsCreated: number;
 }
 
 export interface FinanceSummary {

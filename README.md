@@ -19,7 +19,7 @@ This repository is the foundation: a working, deployable full-stack app running
 | 🔐 **Accounts & family** | Create a family, invite members, role-based access (owner / adult / child / member). Session-cookie auth with PBKDF2-hashed passwords. |
 | 🗓️ **Activities** | School runs, clubs, meetings, weekend plans, appointments and chores — assign to a family member, set times/locations, grouped by day. |
 | 💷 **Expenses** | Log family spending by category and payer, filter by month, see monthly totals and category breakdowns. |
-| 📊 **Finance** | Track current accounts, savings, cards, investments and pensions. Automatic **net-worth** (assets − liabilities). Built to plug into Open Banking (TrueLayer / Plaid) later. |
+| 📊 **Finance** | Track current accounts, savings, cards, investments and pensions. Automatic **net-worth** (assets − liabilities). **Connect real banks via Open Banking (TrueLayer)** to sync balances automatically. |
 | 🏠 **Dashboard** | One glance: today's schedule, the week ahead, this month's spend by category, and the family's financial posture. |
 
 ---
@@ -154,14 +154,66 @@ your Cloudflare account.
 
 ---
 
+## Bank integration (Open Banking)
+
+The Finance module can link real bank accounts and keep their balances in sync,
+all handled server-side in the Worker.
+
+### How it works
+
+1. **Connect** — the app asks the Worker for a consent URL and sends the browser
+   to the provider. The user picks their bank and approves access.
+2. **Callback** — the provider redirects back to
+   `/api/finance/connections/callback`. The Worker verifies the one-time `state`,
+   exchanges the authorization code for tokens, **encrypts** them (AES-256-GCM)
+   and stores them in D1, then does an initial sync.
+3. **Sync** — the Worker fetches each account/card balance and upserts it into the
+   `accounts` table (matched on `connection_id` + `external_ref`). A **Cron
+   Trigger** re-syncs every connection every 6 hours; access tokens are refreshed
+   automatically.
+4. **Disconnect** — removes the connection and its tokens; synced accounts are
+   kept as manual entries so history and net worth are preserved.
+
+Security notes: the client secret and all tokens stay server-side; tokens are
+encrypted at rest; the OAuth `state` is single-use and short-lived; and every
+connection is scoped to the signed-in member's family.
+
+### Providers
+
+- **`mock`** (default when no credentials are set) — a fully-working built-in
+  fake bank. The entire connect → sync → disconnect flow works with zero external
+  setup, which is ideal for local development and demos.
+- **`truelayer`** — real UK/EU Open Banking. Selected automatically once
+  credentials are present. Implemented behind a small `BankProvider` interface
+  (`worker/lib/bank/`), so Plaid or another provider can be added the same way.
+
+### Configuring TrueLayer
+
+1. Create an app at <https://console.truelayer.com> and add your redirect URI
+   (e.g. `https://<your-app>/api/finance/connections/callback`).
+2. Set the secrets on the Worker:
+
+   ```bash
+   wrangler secret put TRUELAYER_CLIENT_ID
+   wrangler secret put TRUELAYER_CLIENT_SECRET
+   wrangler secret put ENCRYPTION_KEY        # openssl rand -base64 32
+   ```
+
+3. Set `TRUELAYER_ENV` (`sandbox` or `live`) in `wrangler.jsonc`, and optionally
+   `TRUELAYER_REDIRECT_URI` / `APP_URL`.
+
+For local development, copy `.dev.vars.example` to `.dev.vars` and fill in the
+values — or leave them blank to use the mock provider.
+
+---
+
 ## Roadmap
 
-The MVP is deliberately a solid base to build the full vision on. Natural next
-steps:
+The foundation now covers activities, expenses, finance **and bank sync**.
+Natural next steps:
 
-- **Open Banking / bank sync** — connect real accounts via TrueLayer or Plaid so
-  balances and transactions update automatically. The `accounts` table already
-  carries `provider` / `external_ref` fields for this.
+- **Transactions & spending insights** — pull transactions from linked banks and
+  auto-categorise them alongside manual expenses.
 - **Recurring activities** — repeat rules for the weekly school run, clubs, etc.
 - **Calendar sync** — two-way sync with Google Calendar / iCal feeds.
 - **Budgets & alerts** — monthly budgets per category with nudges when close.

@@ -7,10 +7,13 @@ import { api } from "./api";
 import type {
   Account,
   Activity,
+  BankConnection,
   DashboardData,
   Expense,
   FinanceSummary,
+  LinkStartResponse,
   Member,
+  SyncResult,
 } from "@shared/types";
 
 function qs(params: Record<string, string | undefined>): string {
@@ -29,6 +32,7 @@ function useInvalidateAll() {
     qc.invalidateQueries({ queryKey: ["accounts"] });
     qc.invalidateQueries({ queryKey: ["finance-summary"] });
     qc.invalidateQueries({ queryKey: ["members"] });
+    qc.invalidateQueries({ queryKey: ["connections"] });
   };
 }
 
@@ -192,6 +196,58 @@ export function useDeleteAccount() {
   const invalidate = useInvalidateAll();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/finance/accounts/${id}`),
+    onSuccess: invalidate,
+  });
+}
+
+// ---- Bank connections ----
+interface ConnectionsResponse {
+  connections: BankConnection[];
+  provider: string;
+  liveProvider: boolean;
+}
+
+export function useConnections() {
+  return useQuery({
+    queryKey: ["connections"],
+    queryFn: () => api.get<ConnectionsResponse>("/finance/connections"),
+  });
+}
+
+/** Starts a link and navigates the browser to the provider consent screen. */
+export function useLinkBank() {
+  return useMutation({
+    mutationFn: async () => {
+      const { authUrl } = await api.post<LinkStartResponse>(
+        "/finance/connections/link",
+      );
+      window.location.href = authUrl;
+      return authUrl;
+    },
+  });
+}
+
+export function useSyncConnection() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<SyncResult>(`/finance/connections/${id}/sync`),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSyncAll() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: () => api.post<SyncResult>("/finance/sync"),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDisconnectBank() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/finance/connections/${id}`),
     onSuccess: invalidate,
   });
 }

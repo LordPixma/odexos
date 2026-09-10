@@ -79,3 +79,60 @@ export function generateToken(): string {
 export function generateId(): string {
   return crypto.randomUUID();
 }
+
+// --- Symmetric encryption for bank tokens at rest (AES-256-GCM) ---
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+function fromBase64(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function importAesKey(secret: string): Promise<CryptoKey> {
+  // Derive a fixed-length key from whatever secret string is configured.
+  const material = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(secret),
+  );
+  return crypto.subtle.importKey("raw", material, { name: "AES-GCM" }, false, [
+    "encrypt",
+    "decrypt",
+  ]);
+}
+
+/** Encrypts a string, returning `<ivBase64>.<ciphertextBase64>`. */
+export async function encryptSecret(
+  plaintext: string,
+  secret: string,
+): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await importAesKey(secret);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    new TextEncoder().encode(plaintext),
+  );
+  return `${toBase64(iv)}.${toBase64(new Uint8Array(ciphertext))}`;
+}
+
+export async function decryptSecret(
+  blob: string,
+  secret: string,
+): Promise<string> {
+  const [ivB64, dataB64] = blob.split(".");
+  if (!ivB64 || !dataB64) throw new Error("Malformed encrypted value");
+  const key = await importAesKey(secret);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fromBase64(ivB64) },
+    key,
+    fromBase64(dataB64),
+  );
+  return new TextDecoder().decode(plaintext);
+}

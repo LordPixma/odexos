@@ -1,10 +1,17 @@
 import type {
   AccountRow,
   ActivityRow,
+  BankConnectionRow,
   ExpenseRow,
   UserRow,
 } from "../db/schema";
-import type { Account, Activity, Expense, Member } from "@shared/types";
+import type {
+  Account,
+  Activity,
+  BankConnection,
+  Expense,
+  Member,
+} from "@shared/types";
 
 export function toMember(row: UserRow): Member {
   return {
@@ -60,8 +67,25 @@ export function toAccount(row: AccountRow): Account {
     balanceCents: row.balanceCents,
     currency: row.currency,
     provider: row.provider,
+    connectionId: row.connectionId,
     ownerMemberId: row.ownerMemberId,
     lastSyncedAt: row.lastSyncedAt,
+    createdAt: row.createdAt,
+  };
+}
+
+export function toBankConnection(
+  row: BankConnectionRow,
+  accountCount: number,
+): BankConnection {
+  return {
+    id: row.id,
+    provider: row.provider,
+    displayName: row.displayName,
+    status: row.status,
+    lastSyncedAt: row.lastSyncedAt,
+    lastError: row.lastError,
+    accountCount,
     createdAt: row.createdAt,
   };
 }

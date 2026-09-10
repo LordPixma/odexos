@@ -17,17 +17,28 @@
     "run_worker_first": ["/api/*"]
   },
   // Cloudflare D1 (SQLite) — the family database.
-  // After creating the DB with `wrangler d1 create odexos-db`, paste the
-  // returned database_id below.
+  // The binding stays "DB" (the code uses env.DB); database_id is this
+  // account's odexos-db instance.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "odexos-db",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "database_id": "7187977c-45b2-442b-b512-cd72dcd90c3b",
       "migrations_dir": "migrations"
     }
   ],
+  // Refresh linked bank balances every 6 hours.
+  "triggers": {
+    "crons": ["0 */6 * * *"]
+  },
   "vars": {
-    "APP_NAME": "OdexOS"
+    "APP_NAME": "OdexOS",
+    // Bank provider: "mock" (built-in demo) or "truelayer". Leave unset to
+    // auto-detect — TrueLayer is used when its credentials are configured,
+    // otherwise the mock provider. TrueLayer environment: "sandbox" | "live".
+    "TRUELAYER_ENV": "sandbox"
+    // Secrets (set with `wrangler secret put <NAME>`), never commit these:
+    //   TRUELAYER_CLIENT_ID, TRUELAYER_CLIENT_SECRET, ENCRYPTION_KEY
+    // Optional: TRUELAYER_REDIRECT_URI, APP_URL, BANK_PROVIDER
   }
 }

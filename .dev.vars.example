@@ -1,0 +1,26 @@
+# Copy this file to `.dev.vars` for local development. `.dev.vars` is git-ignored.
+# Leave the TrueLayer values unset to use the built-in mock bank provider — the
+# whole connect / sync / disconnect flow works without any external service.
+
+# --- Bank integration (all optional) ---
+
+# Force a provider. Auto-detected if unset: TrueLayer when its credentials are
+# present, otherwise the mock provider.
+# BANK_PROVIDER=truelayer
+
+# TrueLayer environment: "sandbox" (default) or "live".
+# TRUELAYER_ENV=sandbox
+
+# TrueLayer app credentials (from https://console.truelayer.com).
+# TRUELAYER_CLIENT_ID=your-client-id
+# TRUELAYER_CLIENT_SECRET=your-client-secret
+
+# Must exactly match a redirect URI registered in the TrueLayer console.
+# TRUELAYER_REDIRECT_URI=http://localhost:8787/api/finance/connections/callback
+
+# Encrypts bank access/refresh tokens at rest (AES-256-GCM).
+# Generate one with:  openssl rand -base64 32
+# ENCRYPTION_KEY=change-me-to-a-long-random-string
+
+# Public URL of the deployed app (used to build absolute redirect URLs).
+# APP_URL=https://odexos.example.com
