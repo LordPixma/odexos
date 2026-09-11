@@ -71,6 +71,13 @@
       "when": 1789131687547,
       "tag": "0009_member_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789133928600,
+      "tag": "0010_password_resets",
+      "breakpoints": true
     }
   ]
 }

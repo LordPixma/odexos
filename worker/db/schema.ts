@@ -47,11 +47,14 @@ export const users = sqliteTable(
     inviteExpiresAt: text("invite_expires_at"), // ISO 8601
     invitedBy: text("invited_by"), // user id of the inviter (no FK: informational)
     invitedAt: text("invited_at"), // ISO 8601
+    resetTokenHash: text("reset_token_hash"), // SHA-256 of the password-reset token
+    resetExpiresAt: text("reset_expires_at"), // ISO 8601
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({
     familyIdx: index("users_family_idx").on(t.familyId),
     inviteTokenIdx: index("users_invite_token_idx").on(t.inviteTokenHash),
+    resetTokenIdx: index("users_reset_token_idx").on(t.resetTokenHash),
   }),
 );
 

@@ -1,12 +1,19 @@
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
-import { families, users } from "../db/schema";
+import { families, sessions, users } from "../db/schema";
+import { appOrigin } from "../lib/bank";
 import { currentUser, endSession, startSession } from "../lib/auth";
-import { generateId, hashPassword, verifyPassword } from "../lib/crypto";
+import {
+  generateId,
+  hashPassword,
+  sha256Hex,
+  verifyPassword,
+} from "../lib/crypto";
+import { createResetToken, sendResetEmail } from "../lib/reset";
 import { toMember } from "../lib/serialize";
 import type { AppEnv } from "../lib/types";
 import { requireEmail, requireString } from "../lib/validate";
-import type { AuthState } from "@shared/types";
+import type { AuthState, ResetPreview } from "@shared/types";
 
 const DEFAULT_COLORS = [
   "#6366f1",
@@ -67,6 +74,8 @@ auth.post("/register", async (c) => {
     inviteExpiresAt: null,
     invitedBy: null,
     invitedAt: null,
+    resetTokenHash: null,
+    resetExpiresAt: null,
     createdAt: new Date().toISOString(),
   });
   return c.json<AuthState>({ member, family }, 201);
@@ -106,6 +115,94 @@ auth.post("/logout", async (c) => {
   const db = c.get("db");
   await endSession(c, db);
   return c.json({ ok: true });
+});
+
+// Request a password-reset link. Always returns ok so the endpoint can't be
+// used to probe which emails have accounts.
+auth.post("/forgot", async (c) => {
+  const db = c.get("db");
+  const body = await c.req.json().catch(() => ({}));
+  const email = requireEmail(body.email);
+
+  const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+  if (user && user.status === "active") {
+    const { token, tokenHash, expiresAt } = await createResetToken();
+    await db
+      .update(users)
+      .set({ resetTokenHash: tokenHash, resetExpiresAt: expiresAt })
+      .where(eq(users.id, user.id));
+    const resetUrl = `${appOrigin(c.env, c)}/reset/${token}`;
+    try {
+      await sendResetEmail(c.env, {
+        to: user.email,
+        appName: c.env.APP_NAME || "OdexOS",
+        name: user.name,
+        resetUrl,
+      });
+    } catch (err) {
+      console.error("Reset email failed:", err);
+    }
+  }
+  return c.json({ ok: true });
+});
+
+// Validate a reset token so the reset page can render (public).
+auth.get("/reset/:token", async (c) => {
+  const db = c.get("db");
+  const tokenHash = await sha256Hex(c.req.param("token"));
+  const user = await db.query.users.findFirst({
+    where: eq(users.resetTokenHash, tokenHash),
+  });
+  if (!user) {
+    return c.json({ error: "This reset link is invalid or has already been used." }, 404);
+  }
+  if (!user.resetExpiresAt || new Date(user.resetExpiresAt).getTime() < Date.now()) {
+    return c.json({ error: "This reset link has expired. Request a new one." }, 410);
+  }
+  return c.json<ResetPreview>({ email: user.email });
+});
+
+// Consume a reset token: set a new password, drop existing sessions, sign in.
+auth.post("/reset", async (c) => {
+  const db = c.get("db");
+  const body = await c.req.json().catch(() => ({}));
+  const token = requireString(body.token, "Token", { max: 200 });
+  const password = requireString(body.password, "Password", { min: 8, max: 200 });
+
+  const tokenHash = await sha256Hex(token);
+  const user = await db.query.users.findFirst({
+    where: eq(users.resetTokenHash, tokenHash),
+  });
+  if (!user) {
+    return c.json({ error: "This reset link is invalid or has already been used." }, 404);
+  }
+  if (!user.resetExpiresAt || new Date(user.resetExpiresAt).getTime() < Date.now()) {
+    return c.json({ error: "This reset link has expired. Request a new one." }, 410);
+  }
+
+  await db
+    .update(users)
+    .set({
+      passwordHash: await hashPassword(password),
+      resetTokenHash: null,
+      resetExpiresAt: null,
+      status: "active", // a reset also activates a not-yet-accepted invite
+    })
+    .where(eq(users.id, user.id));
+
+  // Invalidate any existing sessions (in case the account was compromised),
+  // then start a fresh one so the reset signs them straight in.
+  await db.delete(sessions).where(eq(sessions.userId, user.id));
+  await startSession(c, db, user.id);
+
+  const family = await db.query.families.findFirst({
+    where: eq(families.id, user.familyId),
+  });
+  const updated = await db.query.users.findFirst({ where: eq(users.id, user.id) });
+  return c.json<AuthState>({
+    member: toMember(updated!),
+    family: { id: user.familyId, name: family?.name ?? "" },
+  });
 });
 
 auth.get("/me", async (c) => {
