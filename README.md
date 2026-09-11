@@ -20,7 +20,7 @@ This repository is the foundation: a working, deployable full-stack app running
 | 🗓️ **Activities** | School runs, clubs, meetings, weekend plans, appointments and chores — assign to a family member, set times/locations, grouped by day. |
 | 💷 **Expenses** | Log family spending by category and payer, filter by month, see monthly totals and category breakdowns. |
 | 📊 **Finance** | Track current accounts, savings, cards, investments and pensions. Automatic **net-worth** (assets − liabilities). **Connect real banks via Open Banking (TrueLayer)** to sync balances automatically. |
-| 🧾 **Transactions** | Bank transactions synced from linked accounts, **auto-categorised**, with monthly spending insights (by category + top merchants). Re-categorise any transaction; overrides stick. |
+| 🧾 **Transactions** | Bank transactions synced from linked accounts, **auto-categorised**, with monthly spending insights (by category + top merchants). Re-categorise any transaction; overrides stick. Define **custom category rules** (merchant → category) that beat the built-in categoriser and re-apply to existing transactions. |
 | 🎯 **Budgets & alerts** | Monthly limits by category (and an overall cap), tracked against **combined** manual expenses + synced bank spend. Colour-coded progress, with warning (≥80%) and over-budget (≥100%) alerts surfaced on the Budgets page and the Dashboard. |
 | 🏠 **Dashboard** | One glance: today's schedule, the week ahead, **combined** month spend (manual + bank) by category, income, recent bank activity, budget alerts, and the family's financial posture. |
 
@@ -218,9 +218,8 @@ sync with auto-categorisation **and budgets with alerts**. Natural next steps:
 
 - **Alert delivery** — email/push when a budget is breached (in-app today; a
   Cron + email provider such as MailChannels/Resend would deliver a digest).
-- **Editable category rules** — let each family teach the auto-categoriser new
-  merchant → category mappings.
 - **Recurring activities** — repeat rules for the weekly school run, clubs, etc.
+- **Shared lists & meal planning** — weekend plans, shopping, chores.
 - **Calendar sync** — two-way sync with Google Calendar / iCal feeds.
 - **Budgets & alerts** — monthly budgets per category with nudges when close.
 - **Shared lists & meal planning** — weekend plans, shopping, chores.

@@ -7,9 +7,11 @@ import { api } from "./api";
 import type {
   Account,
   Activity,
+  ApplyRulesResult,
   BankConnection,
   Budget,
   BudgetsOverview,
+  CategoryRule,
   DashboardData,
   Expense,
   FinanceSummary,
@@ -322,6 +324,52 @@ export function useDeleteBudget() {
   const invalidate = useInvalidateAll();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/finance/budgets/${id}`),
+    onSuccess: invalidate,
+  });
+}
+
+// ---- Category rules ----
+export function useCategoryRules() {
+  return useQuery({
+    queryKey: ["category-rules"],
+    queryFn: async () =>
+      (await api.get<{ rules: CategoryRule[] }>("/finance/category-rules")).rules,
+  });
+}
+
+export function useCreateCategoryRule() {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (body: { pattern: string; category: string }) =>
+      api.post<{ rule: CategoryRule; updated: number }>(
+        "/finance/category-rules",
+        body,
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["category-rules"] });
+      invalidate();
+    },
+  });
+}
+
+export function useDeleteCategoryRule() {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/finance/category-rules/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["category-rules"] });
+      invalidate();
+    },
+  });
+}
+
+export function useApplyCategoryRules() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: () =>
+      api.post<ApplyRulesResult>("/finance/category-rules/apply"),
     onSuccess: invalidate,
   });
 }

@@ -5,6 +5,7 @@ import {
   bankConnections,
   bankOauthStates,
   budgets,
+  categoryRules,
   families,
   transactions,
   users,
@@ -14,9 +15,11 @@ import {
   toAccount,
   toBankConnection,
   toBudget,
+  toCategoryRule,
   toTransaction,
 } from "../lib/serialize";
 import { buildBudgetsOverview, currentMonthKey } from "../lib/budgets";
+import { reapplyRules } from "../lib/category-rules";
 import type { AppEnv } from "../lib/types";
 import {
   badRequest,
@@ -37,6 +40,7 @@ import {
   EXPENSE_CATEGORIES,
   LIABILITY_ACCOUNT_TYPES,
   type AccountType,
+  type ApplyRulesResult,
   type BudgetsOverview,
   type ExpenseCategory,
   type FinanceSummary,
@@ -548,6 +552,98 @@ app.delete("/budgets/:id", async (c) => {
   if (!existing) return c.json({ error: "Budget not found" }, 404);
   await db.delete(budgets).where(eq(budgets.id, id));
   return c.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// Category rules (editable auto-categorisation)
+// ---------------------------------------------------------------------------
+
+function parsePriority(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? Math.trunc(n) : 0;
+}
+
+app.get("/category-rules", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const rows = await db.query.categoryRules.findMany({
+    where: eq(categoryRules.familyId, familyId),
+    orderBy: [desc(categoryRules.priority), asc(categoryRules.createdAt)],
+  });
+  return c.json({ rules: rows.map(toCategoryRule) });
+});
+
+app.post("/category-rules", async (c) => {
+  const db = c.get("db");
+  const user = c.get("user");
+  const body = await c.req.json().catch(() => ({}));
+
+  const pattern = requireString(body.pattern, "Pattern", { max: 120 });
+  const category = requireEnum(body.category, EXPENSE_CATEGORIES, "Category");
+  const priority = parsePriority(body.priority);
+
+  const id = generateId();
+  await db.insert(categoryRules).values({
+    id,
+    familyId: user.familyId,
+    pattern,
+    category,
+    priority,
+    createdBy: user.id,
+  });
+  const created = await db.query.categoryRules.findFirst({
+    where: eq(categoryRules.id, id),
+  });
+  const updated = await reapplyRules(db, user.familyId);
+  return c.json({ rule: created ? toCategoryRule(created) : null, updated }, 201);
+});
+
+app.patch("/category-rules/:id", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const id = c.req.param("id");
+  const existing = await db.query.categoryRules.findFirst({
+    where: and(eq(categoryRules.id, id), eq(categoryRules.familyId, familyId)),
+  });
+  if (!existing) return c.json({ error: "Rule not found" }, 404);
+
+  const body = await c.req.json().catch(() => ({}));
+  const updates: Partial<typeof categoryRules.$inferInsert> = {
+    updatedAt: new Date().toISOString(),
+  };
+  if (body.pattern !== undefined)
+    updates.pattern = requireString(body.pattern, "Pattern", { max: 120 });
+  if (body.category !== undefined)
+    updates.category = requireEnum(body.category, EXPENSE_CATEGORIES, "Category");
+  if (body.priority !== undefined) updates.priority = parsePriority(body.priority);
+
+  await db.update(categoryRules).set(updates).where(eq(categoryRules.id, id));
+  const row = await db.query.categoryRules.findFirst({
+    where: eq(categoryRules.id, id),
+  });
+  const updated = await reapplyRules(db, familyId);
+  return c.json({ rule: row ? toCategoryRule(row) : null, updated });
+});
+
+app.delete("/category-rules/:id", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const id = c.req.param("id");
+  const existing = await db.query.categoryRules.findFirst({
+    where: and(eq(categoryRules.id, id), eq(categoryRules.familyId, familyId)),
+  });
+  if (!existing) return c.json({ error: "Rule not found" }, 404);
+  await db.delete(categoryRules).where(eq(categoryRules.id, id));
+  const updated = await reapplyRules(db, familyId);
+  return c.json({ ok: true, updated });
+});
+
+// Re-run all rules over existing (unlocked) transactions.
+app.post("/category-rules/apply", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const updated = await reapplyRules(db, familyId);
+  return c.json<ApplyRulesResult>({ updated });
 });
 
 // Public OAuth callback (secured by the one-time `state`, not the session).

@@ -1,15 +1,31 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   useAccounts,
+  useApplyCategoryRules,
+  useCategoryRules,
+  useCreateCategoryRule,
+  useDeleteCategoryRule,
   useInsights,
   useTransactions,
   useUpdateTransactionCategory,
 } from "../lib/queries";
-import { Card, EmptyState, PageLoader, Select } from "../components/ui";
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorBanner,
+  Field,
+  Input,
+  Modal,
+  PageLoader,
+  Select,
+} from "../components/ui";
+import { TrashIcon } from "../components/icons";
 import { EXPENSE_COLORS } from "../lib/labels";
 import { formatDate, formatMoney } from "../lib/format";
 import { todayISODate } from "../lib/format";
+import { ApiError } from "../lib/api";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABELS } from "@shared/types";
 
 function currentMonth(): string {
@@ -53,6 +69,28 @@ export default function TransactionsPage() {
   const { data: accounts = [] } = useAccounts();
   const recategorise = useUpdateTransactionCategory();
 
+  const { data: rules = [] } = useCategoryRules();
+  const createRule = useCreateCategoryRule();
+  const deleteRule = useDeleteCategoryRule();
+  const applyRules = useApplyCategoryRules();
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [ruleForm, setRuleForm] = useState({
+    pattern: "",
+    category: EXPENSE_CATEGORIES[0] as string,
+  });
+
+  function addRule(e: FormEvent) {
+    e.preventDefault();
+    if (!ruleForm.pattern.trim()) return;
+    createRule.mutate(
+      { pattern: ruleForm.pattern.trim(), category: ruleForm.category },
+      {
+        onSuccess: () =>
+          setRuleForm({ pattern: "", category: EXPENSE_CATEGORIES[0] }),
+      },
+    );
+  }
+
   const accountById = useMemo(
     () => new Map(accounts.map((a) => [a.id, a])),
     [accounts],
@@ -66,13 +104,18 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
           Transactions
         </h1>
         <p className="text-sm text-slate-500">
           Everything flowing through your linked bank accounts, auto-categorised.
         </p>
+        </div>
+        <Button variant="secondary" onClick={() => setRulesOpen(true)}>
+          Category rules{rules.length > 0 ? ` (${rules.length})` : ""}
+        </Button>
       </div>
 
       {isLoading ? (
@@ -281,6 +324,101 @@ export default function TransactionsPage() {
           )}
         </>
       )}
+
+      <Modal
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        title="Category rules"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">
+            Teach the auto-categoriser: when a transaction's merchant or
+            description contains a phrase, always file it under a category. Your
+            rules beat the built-in ones and apply to existing transactions too
+            (manual overrides are kept).
+          </p>
+
+          <form onSubmit={addRule} className="flex flex-wrap items-end gap-2">
+            <div className="min-w-[9rem] flex-1">
+              <Field label="When it contains">
+                <Input
+                  value={ruleForm.pattern}
+                  onChange={(e) =>
+                    setRuleForm({ ...ruleForm, pattern: e.target.value })
+                  }
+                  placeholder="e.g. Amazon"
+                />
+              </Field>
+            </div>
+            <div className="min-w-[8rem]">
+              <Field label="File as">
+                <Select
+                  value={ruleForm.category}
+                  onChange={(e) =>
+                    setRuleForm({ ...ruleForm, category: e.target.value })
+                  }
+                >
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {EXPENSE_CATEGORY_LABELS[c]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <Button type="submit" disabled={createRule.isPending}>
+              Add
+            </Button>
+          </form>
+
+          <ErrorBanner message={(createRule.error as ApiError | null)?.message} />
+
+          {rules.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center text-sm text-slate-400">
+              No custom rules yet.
+            </p>
+          ) : (
+            <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+              {rules.map((r) => (
+                <div key={r.id} className="flex items-center gap-2 px-3 py-2 text-sm">
+                  <span className="min-w-0 flex-1 truncate text-slate-600">
+                    Contains{" "}
+                    <span className="font-medium text-slate-900">"{r.pattern}"</span>{" "}
+                    →{" "}
+                    <span
+                      className="font-medium"
+                      style={{ color: EXPENSE_COLORS[r.category] }}
+                    >
+                      {EXPENSE_CATEGORY_LABELS[r.category]}
+                    </span>
+                  </span>
+                  <button
+                    onClick={() => deleteRule.mutate(r.id)}
+                    className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    aria-label="Delete rule"
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => applyRules.mutate()}
+              disabled={applyRules.isPending}
+              className="text-sm font-medium text-brand-600 hover:underline disabled:opacity-50"
+            >
+              Re-apply to existing transactions
+            </button>
+            <Button variant="secondary" onClick={() => setRulesOpen(false)}>
+              Done
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

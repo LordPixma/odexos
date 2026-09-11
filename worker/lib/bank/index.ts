@@ -5,7 +5,8 @@ import { accounts, bankConnections, transactions } from "../../db/schema";
 import type { BankConnectionRow } from "../../db/schema";
 import { decryptSecret, encryptSecret, generateId } from "../crypto";
 import type { AppEnv, Bindings } from "../types";
-import { categorize } from "./categorize";
+import { categorize, type CustomRule } from "./categorize";
+import { loadFamilyRules } from "../category-rules";
 import { MockProvider } from "./mock";
 import { TrueLayerProvider } from "./truelayer";
 import type { BankProvider, ProviderAccount } from "./types";
@@ -116,6 +117,7 @@ async function syncTransactions(
   accessToken: string,
   pa: ProviderAccount,
   accountId: string,
+  rules: CustomRule[],
 ): Promise<number> {
   const providerTxns = await provider.fetchTransactions(
     accessToken,
@@ -143,7 +145,7 @@ async function syncTransactions(
       amountCents: t.amountCents,
       currency: t.currency,
       direction: t.direction,
-      category: categorize(t),
+      category: categorize(t, rules),
       rawCategory: t.rawCategory,
       date: t.date,
       bookedAt: t.bookedAt,
@@ -217,6 +219,7 @@ export async function syncConnection(
       }
     }
 
+    const rules = await loadFamilyRules(db, connection.familyId);
     for (const { pa, accountId } of linked) {
       transactionsAdded += await syncTransactions(
         db,
@@ -225,6 +228,7 @@ export async function syncConnection(
         accessToken,
         pa,
         accountId,
+        rules,
       );
     }
 

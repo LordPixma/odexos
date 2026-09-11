@@ -1,5 +1,18 @@
-import type { ExpenseCategory } from "@shared/types";
-import type { ProviderTransaction } from "./types";
+import type { ExpenseCategory, TransactionDirection } from "@shared/types";
+
+/** Anything that can be auto-categorised (provider transaction or stored row). */
+export interface CategorizableTxn {
+  direction: TransactionDirection;
+  merchant: string | null;
+  description: string;
+  rawCategory: string | null;
+}
+
+/** A family-defined rule: a substring pattern → a category. */
+export interface CustomRule {
+  pattern: string;
+  category: ExpenseCategory;
+}
 
 // Keyword → category rules. First match wins; order matters (more specific
 // first). Matched case-insensitively against " merchant description rawCategory "
@@ -144,13 +157,24 @@ const RULES: { category: ExpenseCategory; keywords: string[] }[] = [
   },
 ];
 
-/** Best-effort auto-category for a bank transaction. */
-export function categorize(tx: ProviderTransaction): ExpenseCategory {
+/**
+ * Best-effort auto-category. Family-defined `customRules` are checked first
+ * (in the order given), then the built-in keyword rules.
+ */
+export function categorize(
+  tx: CategorizableTxn,
+  customRules: CustomRule[] = [],
+): ExpenseCategory {
   // Income and internal transfers aren't spending categories.
   if (tx.direction === "credit") return "other";
 
   const haystack =
     ` ${tx.merchant ?? ""} ${tx.description} ${tx.rawCategory ?? ""} `.toLowerCase();
+
+  for (const rule of customRules) {
+    const pattern = rule.pattern.trim().toLowerCase();
+    if (pattern && haystack.includes(pattern)) return rule.category;
+  }
   for (const rule of RULES) {
     if (rule.keywords.some((k) => haystack.includes(k))) {
       return rule.category;
