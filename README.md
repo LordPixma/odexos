@@ -21,6 +21,7 @@ This repository is the foundation: a working, deployable full-stack app running
 | 💷 **Expenses** | Log family spending by category and payer, filter by month, see monthly totals and category breakdowns. |
 | 📊 **Finance** | Track current accounts, savings, cards, investments and pensions. Automatic **net-worth** (assets − liabilities). **Connect real banks via Open Banking (TrueLayer)** to sync balances automatically. |
 | 🧾 **Transactions** | Bank transactions synced from linked accounts, **auto-categorised**, with monthly spending insights (by category + top merchants). Re-categorise any transaction; overrides stick. |
+| 🎯 **Budgets & alerts** | Monthly limits by category (and an overall cap), tracked against **combined** manual expenses + synced bank spend. Colour-coded progress, with warning (≥80%) and over-budget (≥100%) alerts surfaced on the Budgets page and the Dashboard. |
 | 🏠 **Dashboard** | One glance: today's schedule, the week ahead, this month's spend by category, and the family's financial posture. |
 
 ---
@@ -212,11 +213,11 @@ values — or leave them blank to use the mock provider.
 
 ## Roadmap
 
-The foundation now covers activities, expenses, finance, bank sync **and
-transaction sync with auto-categorisation**. Natural next steps:
+The foundation now covers activities, expenses, finance, bank sync, transaction
+sync with auto-categorisation **and budgets with alerts**. Natural next steps:
 
-- **Budgets & alerts** — monthly budgets per category, drawing on synced
-  transactions, with nudges as you approach a limit.
+- **Alert delivery** — email/push when a budget is breached (in-app today; a
+  Cron + email provider such as MailChannels/Resend would deliver a digest).
 - **Fold transactions into the dashboard** — show recent bank activity and
   combined (manual + synced) spend on the overview.
 - **Editable category rules** — let each family teach the auto-categoriser new

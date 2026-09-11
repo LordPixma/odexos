@@ -188,8 +188,54 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Right rail: finance + spend breakdown */}
+        {/* Right rail: budget alerts + finance + spend breakdown */}
         <div className="space-y-6">
+          {data.budgetAlerts.length > 0 && (
+            <Card className="p-5">
+              <SectionTitle
+                title="Budget alerts"
+                action={
+                  <Link to="/budgets" className="text-sm font-medium text-brand-600 hover:underline">
+                    Manage
+                  </Link>
+                }
+              />
+              <div className="space-y-3">
+                {data.budgetAlerts.map((a) => {
+                  const color = a.status === "over" ? "#dc2626" : "#b45309";
+                  const label = a.category
+                    ? EXPENSE_CATEGORY_LABELS[a.category]
+                    : "Overall budget";
+                  return (
+                    <div key={a.id}>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-1.5 text-slate-700">
+                          <span style={{ color }}>⚠</span> {label}
+                        </span>
+                        <span className="font-medium" style={{ color }}>
+                          {Math.round(a.percent * 100)}%
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.min(a.percent, 1) * 100}%`,
+                            backgroundColor: color,
+                          }}
+                        />
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {formatMoney(a.spentCents, data.currency)} of{" "}
+                        {formatMoney(a.amountCents, data.currency)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
           <Card className="p-5">
             <SectionTitle
               title="Financial posture"

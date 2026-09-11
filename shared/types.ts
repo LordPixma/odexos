@@ -188,6 +188,40 @@ export interface SpendingInsights {
   topMerchants: { merchant: string; amountCents: number; count: number }[];
 }
 
+// A budget's category is null for the overall/total monthly limit.
+export type BudgetCategory = ExpenseCategory | null;
+export type BudgetStatus = "ok" | "warning" | "over";
+
+/** Spend crosses into "warning" at this fraction of the limit. */
+export const BUDGET_WARNING_THRESHOLD = 0.8;
+
+export interface Budget {
+  id: string;
+  category: BudgetCategory;
+  amountCents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A budget plus its computed spend for a given month. */
+export interface BudgetProgress {
+  id: string;
+  category: BudgetCategory;
+  amountCents: number;
+  spentCents: number;
+  remainingCents: number; // may be negative when over budget
+  percent: number; // 0..∞ (spent / amount)
+  status: BudgetStatus;
+}
+
+export interface BudgetsOverview {
+  month: string; // YYYY-MM
+  currency: string;
+  overall: BudgetProgress | null;
+  categories: BudgetProgress[];
+  alerts: BudgetProgress[]; // categories/overall at warning or over
+}
+
 export interface FinanceSummary {
   currency: string;
   totalAssetsCents: number;
@@ -206,6 +240,7 @@ export interface DashboardData {
   currency: string;
   expenseByCategory: { category: ExpenseCategory; amountCents: number }[];
   finance: FinanceSummary;
+  budgetAlerts: BudgetProgress[]; // budgets at warning/over this month
 }
 
 export interface ApiError {

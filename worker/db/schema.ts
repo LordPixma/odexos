@@ -272,6 +272,39 @@ export const transactions = sqliteTable(
   }),
 );
 
+// Monthly spending budgets. One standing budget per category (applied every
+// month); `category` NULL means an overall/total monthly limit.
+export const budgets = sqliteTable(
+  "budgets",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    category: text("category", {
+      enum: [
+        "groceries",
+        "transport",
+        "utilities",
+        "school",
+        "leisure",
+        "health",
+        "housing",
+        "other",
+      ],
+    }), // NULL = overall monthly budget
+    amountCents: integer("amount_cents").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    familyIdx: index("budgets_family_idx").on(t.familyId),
+  }),
+);
+
 export type FamilyRow = typeof families.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
@@ -280,3 +313,4 @@ export type AccountRow = typeof accounts.$inferSelect;
 export type BankConnectionRow = typeof bankConnections.$inferSelect;
 export type BankOauthStateRow = typeof bankOauthStates.$inferSelect;
 export type TransactionRow = typeof transactions.$inferSelect;
+export type BudgetRow = typeof budgets.$inferSelect;

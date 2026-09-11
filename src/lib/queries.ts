@@ -8,6 +8,8 @@ import type {
   Account,
   Activity,
   BankConnection,
+  Budget,
+  BudgetsOverview,
   DashboardData,
   Expense,
   FinanceSummary,
@@ -37,6 +39,7 @@ function useInvalidateAll() {
     qc.invalidateQueries({ queryKey: ["connections"] });
     qc.invalidateQueries({ queryKey: ["transactions"] });
     qc.invalidateQueries({ queryKey: ["insights"] });
+    qc.invalidateQueries({ queryKey: ["budgets"] });
   };
 }
 
@@ -286,5 +289,39 @@ export function useInsights(month?: string) {
   return useQuery({
     queryKey: ["insights", month ?? "current"],
     queryFn: () => api.get<SpendingInsights>(`/finance/insights${qs({ month })}`),
+  });
+}
+
+// ---- Budgets ----
+export function useBudgets(month?: string) {
+  return useQuery({
+    queryKey: ["budgets", month ?? "current"],
+    queryFn: () => api.get<BudgetsOverview>(`/finance/budgets${qs({ month })}`),
+  });
+}
+
+export function useCreateBudget() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (body: { category: string | null; amount: number }) =>
+      api.post<{ budget: Budget }>("/finance/budgets", body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateBudget() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: ({ id, amount }: { id: string; amount: number }) =>
+      api.patch<{ budget: Budget }>(`/finance/budgets/${id}`, { amount }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteBudget() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/finance/budgets/${id}`),
+    onSuccess: invalidate,
   });
 }

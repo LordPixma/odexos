@@ -4,12 +4,19 @@ import {
   accounts,
   bankConnections,
   bankOauthStates,
+  budgets,
   families,
   transactions,
   users,
 } from "../db/schema";
 import { generateId, generateToken } from "../lib/crypto";
-import { toAccount, toBankConnection, toTransaction } from "../lib/serialize";
+import {
+  toAccount,
+  toBankConnection,
+  toBudget,
+  toTransaction,
+} from "../lib/serialize";
+import { buildBudgetsOverview, currentMonthKey } from "../lib/budgets";
 import type { AppEnv } from "../lib/types";
 import {
   badRequest,
@@ -30,6 +37,7 @@ import {
   EXPENSE_CATEGORIES,
   LIABILITY_ACCOUNT_TYPES,
   type AccountType,
+  type BudgetsOverview,
   type ExpenseCategory,
   type FinanceSummary,
   type SpendingInsights,
@@ -448,6 +456,98 @@ app.get("/insights", async (c) => {
       .slice(0, 6),
   };
   return c.json(insights);
+});
+
+// ---------------------------------------------------------------------------
+// Budgets & alerts
+// ---------------------------------------------------------------------------
+
+// A budget's category: null (overall) or a valid expense category.
+function parseCategory(value: unknown): ExpenseCategory | null {
+  if (value === undefined || value === null || value === "") return null;
+  return requireEnum(value, EXPENSE_CATEGORIES, "Category");
+}
+
+// Budgets with spend + status for a given month (defaults to the current month).
+app.get("/budgets", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const monthParam = c.req.query("month");
+  const month =
+    monthParam && /^\d{4}-\d{2}$/.test(monthParam)
+      ? monthParam
+      : currentMonthKey();
+  const overview = await buildBudgetsOverview(db, familyId, month);
+  return c.json<BudgetsOverview>(overview);
+});
+
+// Create a budget for a category (or the overall budget). One per category.
+app.post("/budgets", async (c) => {
+  const db = c.get("db");
+  const user = c.get("user");
+  const body = await c.req.json().catch(() => ({}));
+
+  const category = parseCategory(body.category);
+  const amountCents = requireAmountCents(body.amount, "Budget amount");
+  if (amountCents <= 0) badRequest("Budget amount must be greater than zero");
+
+  const existingForFamily = await db.query.budgets.findMany({
+    where: eq(budgets.familyId, user.familyId),
+  });
+  if (existingForFamily.some((b) => b.category === category)) {
+    badRequest(
+      category
+        ? "A budget for that category already exists"
+        : "An overall budget already exists",
+    );
+  }
+
+  const id = generateId();
+  await db.insert(budgets).values({
+    id,
+    familyId: user.familyId,
+    category,
+    amountCents,
+    createdBy: user.id,
+  });
+  const created = await db.query.budgets.findFirst({
+    where: eq(budgets.id, id),
+  });
+  return c.json({ budget: created ? toBudget(created) : null }, 201);
+});
+
+// Update a budget's amount.
+app.patch("/budgets/:id", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const id = c.req.param("id");
+  const existing = await db.query.budgets.findFirst({
+    where: and(eq(budgets.id, id), eq(budgets.familyId, familyId)),
+  });
+  if (!existing) return c.json({ error: "Budget not found" }, 404);
+
+  const body = await c.req.json().catch(() => ({}));
+  const amountCents = requireAmountCents(body.amount, "Budget amount");
+  if (amountCents <= 0) badRequest("Budget amount must be greater than zero");
+
+  await db
+    .update(budgets)
+    .set({ amountCents, updatedAt: new Date().toISOString() })
+    .where(eq(budgets.id, id));
+  const updated = await db.query.budgets.findFirst({ where: eq(budgets.id, id) });
+  return c.json({ budget: updated ? toBudget(updated) : null });
+});
+
+app.delete("/budgets/:id", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const id = c.req.param("id");
+  const existing = await db.query.budgets.findFirst({
+    where: and(eq(budgets.id, id), eq(budgets.familyId, familyId)),
+  });
+  if (!existing) return c.json({ error: "Budget not found" }, 404);
+  await db.delete(budgets).where(eq(budgets.id, id));
+  return c.json({ ok: true });
 });
 
 // Public OAuth callback (secured by the one-time `state`, not the session).

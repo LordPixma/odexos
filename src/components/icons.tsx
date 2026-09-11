@@ -138,6 +138,16 @@ export function RefreshIcon({ className = "", size = 16 }: IconProps) {
   );
 }
 
+export function TargetIcon({ className = "", size = 20 }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function ReceiptIcon({ className = "", size = 20 }: IconProps) {
   return (
     <svg {...base(size, className)}>
