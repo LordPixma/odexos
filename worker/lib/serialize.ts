@@ -43,6 +43,9 @@ export function toActivity(row: ActivityRow): Activity {
     allDay: row.allDay,
     memberId: row.memberId,
     notes: row.notes,
+    recurrence: row.recurrence,
+    recurrenceUntil: row.recurrenceUntil,
+    seriesId: null,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
   };

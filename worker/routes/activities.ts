@@ -1,19 +1,31 @@
 import { Hono } from "hono";
-import { and, asc, eq, gte, lte, type SQL } from "drizzle-orm";
+import { and, eq, gte, lte, ne, type SQL } from "drizzle-orm";
 import { activities, users } from "../db/schema";
 import { generateId } from "../lib/crypto";
 import { toActivity } from "../lib/serialize";
+import { expandActivities } from "../lib/recurrence";
 import type { AppEnv } from "../lib/types";
 import {
   badRequest,
   optionalBool,
+  optionalEnum,
   optionalIsoDateTime,
   optionalString,
   requireEnum,
   requireIsoDateTime,
   requireString,
 } from "../lib/validate";
-import { ACTIVITY_CATEGORIES } from "@shared/types";
+import { ACTIVITY_CATEGORIES, RECURRENCE_RULES } from "@shared/types";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Optional YYYY-MM-DD (recurrence end date).
+function optionalDate(value: unknown, field: string): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  const s = requireString(value, field);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) badRequest(`${field} must be YYYY-MM-DD`);
+  return s;
+}
 
 const app = new Hono<AppEnv>();
 
@@ -30,30 +42,45 @@ async function assertMemberInFamily(
   return memberId;
 }
 
-// List activities, optionally filtered by date range / category / member.
+// List activities within a window, expanding recurring series into occurrences.
 app.get("/", async (c) => {
   const db = c.get("db");
   const familyId = c.get("user").familyId;
   const { from, to, category, memberId } = c.req.query();
 
-  const conditions: SQL[] = [eq(activities.familyId, familyId)];
-  if (from) conditions.push(gte(activities.startsAt, new Date(from).toISOString()));
-  if (to) conditions.push(lte(activities.startsAt, new Date(to).toISOString()));
-  if (category)
-    conditions.push(
-      eq(
-        activities.category,
-        requireEnum(category, ACTIVITY_CATEGORIES, "category"),
-      ),
-    );
-  if (memberId) conditions.push(eq(activities.memberId, memberId));
+  const now = new Date();
+  const fromDate = from ? new Date(from) : new Date(now.getTime() - 365 * DAY_MS);
+  const toDate = to
+    ? new Date(to)
+    : new Date(Math.max(fromDate.getTime(), now.getTime()) + 120 * DAY_MS);
 
-  const rows = await db.query.activities.findMany({
-    where: and(...conditions),
-    orderBy: [asc(activities.startsAt)],
+  const filters: SQL[] = [eq(activities.familyId, familyId)];
+  if (category)
+    filters.push(
+      eq(activities.category, requireEnum(category, ACTIVITY_CATEGORIES, "category")),
+    );
+  if (memberId) filters.push(eq(activities.memberId, memberId));
+
+  // Non-recurring activities that fall inside the window...
+  const nonRecurring = await db.query.activities.findMany({
+    where: and(
+      ...filters,
+      eq(activities.recurrence, "none"),
+      gte(activities.startsAt, fromDate.toISOString()),
+      lte(activities.startsAt, toDate.toISOString()),
+    ),
+    limit: 1000,
+  });
+  // ...plus every recurring series (occurrences may land in the window even
+  // when the series began before it).
+  const recurring = await db.query.activities.findMany({
+    where: and(...filters, ne(activities.recurrence, "none")),
     limit: 500,
   });
-  return c.json({ activities: rows.map(toActivity) });
+
+  const base = [...nonRecurring, ...recurring].map(toActivity);
+  const expanded = expandActivities(base, fromDate, toDate);
+  return c.json({ activities: expanded });
 });
 
 app.post("/", async (c) => {
@@ -86,6 +113,8 @@ app.post("/", async (c) => {
     allDay: optionalBool(body.allDay),
     memberId,
     notes: optionalString(body.notes, "Notes", { max: 2000 }),
+    recurrence: optionalEnum(body.recurrence, RECURRENCE_RULES, "Recurrence", "none"),
+    recurrenceUntil: optionalDate(body.recurrenceUntil, "Repeat until"),
     createdBy: user.id,
   });
   const created = await db.query.activities.findFirst({
@@ -97,7 +126,7 @@ app.post("/", async (c) => {
 app.patch("/:id", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
-  const id = c.req.param("id");
+  const id = c.req.param("id").split("@")[0]; // occurrence id → base series id
 
   const existing = await db.query.activities.findFirst({
     where: and(eq(activities.id, id), eq(activities.familyId, user.familyId)),
@@ -125,6 +154,10 @@ app.patch("/:id", async (c) => {
       user.familyId,
       optionalString(body.memberId, "Member"),
     );
+  if (body.recurrence !== undefined)
+    updates.recurrence = requireEnum(body.recurrence, RECURRENCE_RULES, "Recurrence");
+  if (body.recurrenceUntil !== undefined)
+    updates.recurrenceUntil = optionalDate(body.recurrenceUntil, "Repeat until");
 
   const start = updates.startsAt ?? existing.startsAt;
   const end = updates.endsAt !== undefined ? updates.endsAt : existing.endsAt;
@@ -142,7 +175,7 @@ app.patch("/:id", async (c) => {
 app.delete("/:id", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
-  const id = c.req.param("id");
+  const id = c.req.param("id").split("@")[0]; // occurrence id → base series id
   const existing = await db.query.activities.findFirst({
     where: and(eq(activities.id, id), eq(activities.familyId, user.familyId)),
   });

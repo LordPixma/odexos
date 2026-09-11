@@ -32,8 +32,19 @@ import { ApiError } from "../lib/api";
 import {
   ACTIVITY_CATEGORIES,
   ACTIVITY_CATEGORY_LABELS,
+  RECURRENCE_LABELS,
+  RECURRENCE_RULES,
   type Activity,
+  type RecurrenceRule,
 } from "@shared/types";
+
+const RECURRENCE_SHORT: Record<RecurrenceRule, string> = {
+  none: "",
+  daily: "Daily",
+  weekdays: "Weekdays",
+  weekly: "Weekly",
+  monthly: "Monthly",
+};
 
 interface FormState {
   title: string;
@@ -44,6 +55,8 @@ interface FormState {
   allDay: boolean;
   location: string;
   notes: string;
+  recurrence: string;
+  recurrenceUntil: string;
 }
 
 function emptyForm(): FormState {
@@ -59,6 +72,8 @@ function emptyForm(): FormState {
     allDay: false,
     location: "",
     notes: "",
+    recurrence: "none",
+    recurrenceUntil: "",
   };
 }
 
@@ -72,6 +87,8 @@ function fromActivity(a: Activity): FormState {
     allDay: a.allDay,
     location: a.location ?? "",
     notes: a.notes ?? "",
+    recurrence: a.recurrence,
+    recurrenceUntil: a.recurrenceUntil ?? "",
   };
 }
 
@@ -126,9 +143,16 @@ export default function ActivitiesPage() {
       allDay: form.allDay,
       location: form.location || null,
       notes: form.notes || null,
+      recurrence: form.recurrence,
+      recurrenceUntil:
+        form.recurrence !== "none" && form.recurrenceUntil
+          ? form.recurrenceUntil
+          : null,
     };
     const onDone = { onSuccess: () => setModalOpen(false) };
-    if (editing) update.mutate({ id: editing.id, ...payload }, onDone);
+    // Occurrences carry the base series id in seriesId.
+    if (editing)
+      update.mutate({ id: editing.seriesId ?? editing.id, ...payload }, onDone);
     else create.mutate(payload, onDone);
   }
 
@@ -206,6 +230,11 @@ export default function ActivitiesPage() {
                           >
                             {ACTIVITY_CATEGORY_LABELS[a.category]}
                           </span>
+                          {a.recurrence !== "none" && (
+                            <span className="chip bg-slate-100 text-slate-500" title="Repeats">
+                              ↻ {RECURRENCE_SHORT[a.recurrence]}
+                            </span>
+                          )}
                         </div>
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
                           <span className="inline-flex items-center gap-1">
@@ -233,7 +262,11 @@ export default function ActivitiesPage() {
                         </button>
                         <button
                           onClick={() => {
-                            if (confirm(`Delete "${a.title}"?`)) remove.mutate(a.id);
+                            const msg =
+                              a.recurrence !== "none"
+                                ? `Delete the whole "${a.title}" series?`
+                                : `Delete "${a.title}"?`;
+                            if (confirm(msg)) remove.mutate(a.seriesId ?? a.id);
                           }}
                           className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                           aria-label="Delete"
@@ -317,6 +350,31 @@ export default function ActivitiesPage() {
             />
             All-day activity
           </label>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Repeats">
+              <Select
+                value={form.recurrence}
+                onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
+              >
+                {RECURRENCE_RULES.map((r) => (
+                  <option key={r} value={r}>
+                    {RECURRENCE_LABELS[r]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            {form.recurrence !== "none" && (
+              <Field label="Until (optional)">
+                <Input
+                  type="date"
+                  value={form.recurrenceUntil}
+                  onChange={(e) =>
+                    setForm({ ...form, recurrenceUntil: e.target.value })
+                  }
+                />
+              </Field>
+            )}
+          </div>
           <Field label="Location (optional)">
             <Input
               value={form.location}

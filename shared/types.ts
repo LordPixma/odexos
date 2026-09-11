@@ -40,6 +40,23 @@ export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
   other: "Other",
 };
 
+export const RECURRENCE_RULES = [
+  "none",
+  "daily",
+  "weekdays",
+  "weekly",
+  "monthly",
+] as const;
+export type RecurrenceRule = (typeof RECURRENCE_RULES)[number];
+
+export const RECURRENCE_LABELS: Record<RecurrenceRule, string> = {
+  none: "Does not repeat",
+  daily: "Every day",
+  weekdays: "Every weekday (Mon–Fri)",
+  weekly: "Every week",
+  monthly: "Every month",
+};
+
 export interface Activity {
   id: string;
   familyId: string;
@@ -51,6 +68,9 @@ export interface Activity {
   allDay: boolean;
   memberId: string | null; // assigned member, null = whole family
   notes: string | null;
+  recurrence: RecurrenceRule;
+  recurrenceUntil: string | null; // YYYY-MM-DD
+  seriesId: string | null; // set on generated occurrences → the base activity id
   createdBy: string;
   createdAt: string;
 }

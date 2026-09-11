@@ -83,6 +83,12 @@ export const activities = sqliteTable(
       onDelete: "set null",
     }),
     notes: text("notes"),
+    recurrence: text("recurrence", {
+      enum: ["none", "daily", "weekdays", "weekly", "monthly"],
+    })
+      .notNull()
+      .default("none"),
+    recurrenceUntil: text("recurrence_until"), // YYYY-MM-DD, nullable
     createdBy: text("created_by")
       .notNull()
       .references(() => users.id),

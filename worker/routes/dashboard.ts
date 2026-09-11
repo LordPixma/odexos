@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, ne } from "drizzle-orm";
 import {
   accounts,
   activities,
@@ -8,6 +8,7 @@ import {
   users,
 } from "../db/schema";
 import { toActivity, toMember, toTransaction } from "../lib/serialize";
+import { expandActivities } from "../lib/recurrence";
 import {
   buildBudgetsOverview,
   computeSpendByCategory,
@@ -55,21 +56,30 @@ app.get("/", async (c) => {
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
   const weekEnd = new Date(todayStart.getTime() + 8 * 24 * 60 * 60 * 1000);
 
-  const upcomingRows = await db.query.activities.findMany({
+  // Non-recurring in-window + every recurring series, then expand.
+  const nonRecurringRows = await db.query.activities.findMany({
     where: and(
       eq(activities.familyId, familyId),
+      eq(activities.recurrence, "none"),
       gte(activities.startsAt, todayStart.toISOString()),
       lte(activities.startsAt, weekEnd.toISOString()),
     ),
-    orderBy: [asc(activities.startsAt)],
-    limit: 100,
+    limit: 200,
   });
-  const todayActivities = upcomingRows
-    .filter((a) => a.startsAt < todayEnd.toISOString())
-    .map(toActivity);
-  const upcomingActivities = upcomingRows
-    .filter((a) => a.startsAt >= todayEnd.toISOString())
-    .map(toActivity);
+  const recurringRows = await db.query.activities.findMany({
+    where: and(eq(activities.familyId, familyId), ne(activities.recurrence, "none")),
+    limit: 200,
+  });
+  const windowActivities = expandActivities(
+    [...nonRecurringRows, ...recurringRows].map(toActivity),
+    todayStart,
+    weekEnd,
+  );
+  const todayEndISO = todayEnd.toISOString();
+  const todayActivities = windowActivities.filter((a) => a.startsAt < todayEndISO);
+  const upcomingActivities = windowActivities.filter(
+    (a) => a.startsAt >= todayEndISO,
+  );
 
   // Combined monthly spend (manual expenses + synced bank debits) by category.
   const monthKey = currentMonthKey(now);
