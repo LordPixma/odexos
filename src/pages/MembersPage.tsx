@@ -15,10 +15,11 @@ import {
   Field,
   Input,
   Modal,
+  PageHeader,
   PageLoader,
   Select,
 } from "../components/ui";
-import { EditIcon, PlusIcon, TrashIcon } from "../components/icons";
+import { EditIcon, PlusIcon, TrashIcon, UsersIcon } from "../components/icons";
 import { ApiError } from "../lib/api";
 import type { Member, Role } from "@shared/types";
 
@@ -129,21 +130,19 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            Family
-          </h1>
-          <p className="text-sm text-slate-500">
-            Everyone who can sign in to {auth?.family.name || "your family portal"}.
-          </p>
-        </div>
-        {canManage && (
-          <Button onClick={openCreate}>
-            <PlusIcon /> Invite member
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        icon={<UsersIcon />}
+        tint="#0f8a5f"
+        title="Family"
+        subtitle={`Everyone who can sign in to ${auth?.family.name || "your family portal"}.`}
+        action={
+          canManage && (
+            <Button onClick={openCreate}>
+              <PlusIcon /> Invite member
+            </Button>
+          )
+        }
+      />
 
       {notice && (
         <div className="flex items-start justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">

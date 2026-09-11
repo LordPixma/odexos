@@ -22,9 +22,12 @@ import {
   Field,
   Input,
   Modal,
+  PageHeader,
   PageLoader,
+  SectionHead,
   Select,
   Spinner,
+  StatTile,
 } from "../components/ui";
 import {
   BankIcon,
@@ -33,6 +36,7 @@ import {
   PlusIcon,
   RefreshIcon,
   TrashIcon,
+  WalletIcon,
 } from "../components/icons";
 import { ACCOUNT_COLORS } from "../lib/labels";
 import { formatDateTime, formatMoney } from "../lib/format";
@@ -61,27 +65,6 @@ function emptyForm(): FormState {
     balance: "",
     ownerMemberId: "",
   };
-}
-
-function SummaryCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent: string;
-}) {
-  return (
-    <Card className="p-5">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-        {label}
-      </div>
-      <div className="mt-2 font-display text-2xl font-bold" style={{ color: accent }}>
-        {value}
-      </div>
-    </Card>
-  );
 }
 
 function ConnectionRow({ connection }: { connection: BankConnection }) {
@@ -231,29 +214,27 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            Finance
-          </h1>
-          <p className="text-sm text-slate-500">
-            Your family's financial posture across every account.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => link.mutate()}
-            disabled={link.isPending}
-          >
-            {link.isPending ? <Spinner className="h-4 w-4" /> : <LinkIcon />}
-            Connect a bank
-          </Button>
-          <Button onClick={openCreate}>
-            <PlusIcon /> Add account
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={<WalletIcon />}
+        tint="#0f8a5f"
+        title="Finance"
+        subtitle="Your family's financial posture across every account."
+        action={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => link.mutate()}
+              disabled={link.isPending}
+            >
+              {link.isPending ? <Spinner className="h-4 w-4" /> : <LinkIcon />}
+              Connect a bank
+            </Button>
+            <Button onClick={openCreate}>
+              <PlusIcon /> Add account
+            </Button>
+          </div>
+        }
+      />
 
       {banner && (
         <div
@@ -275,47 +256,47 @@ export default function FinancePage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <SummaryCard
+        <StatTile
           label="Total assets"
           value={formatMoney(summary?.totalAssetsCents ?? 0, currency)}
-          accent="#0f766e"
+          tint="#0f9d6b"
         />
-        <SummaryCard
+        <StatTile
           label="Liabilities"
           value={formatMoney(summary?.totalLiabilitiesCents ?? 0, currency)}
-          accent="#dc2626"
+          tint="#e5484d"
         />
-        <SummaryCard
+        <StatTile
           label="Net worth"
           value={formatMoney(summary?.netWorthCents ?? 0, currency)}
-          accent={(summary?.netWorthCents ?? 0) >= 0 ? "#4f46e5" : "#dc2626"}
+          tint={(summary?.netWorthCents ?? 0) >= 0 ? "#0f8a5f" : "#e5484d"}
         />
       </div>
 
       {/* Connected banks */}
       <Card className="p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Connected banks
-            </h2>
-            <p className="text-sm text-slate-500">
-              {isMock
-                ? "Demo mode — a built-in mock bank. Add TrueLayer credentials to link real accounts."
-                : "Balances sync automatically via TrueLayer Open Banking."}
-            </p>
-          </div>
-          {connections.length > 0 && (
-            <Button
-              variant="secondary"
-              onClick={() => syncAll.mutate()}
-              disabled={syncAll.isPending}
-            >
-              {syncAll.isPending ? <Spinner className="h-4 w-4" /> : <RefreshIcon />}
-              Sync all
-            </Button>
-          )}
-        </div>
+        <SectionHead
+          icon={<BankIcon size={18} />}
+          tint="#2f74e0"
+          title="Connected banks"
+          subtitle={
+            isMock
+              ? "Demo mode — a built-in mock bank. Add TrueLayer credentials to link real accounts."
+              : "Balances sync automatically via TrueLayer Open Banking."
+          }
+          action={
+            connections.length > 0 && (
+              <Button
+                variant="secondary"
+                onClick={() => syncAll.mutate()}
+                disabled={syncAll.isPending}
+              >
+                {syncAll.isPending ? <Spinner className="h-4 w-4" /> : <RefreshIcon />}
+                Sync all
+              </Button>
+            )
+          }
+        />
         {connections.length === 0 ? (
           <EmptyState
             icon="🏦"
@@ -347,7 +328,9 @@ export default function FinancePage() {
 
       {/* Accounts */}
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">All accounts</h2>
+        <h2 className="mb-3 font-display text-lg font-semibold text-slate-900">
+          All accounts
+        </h2>
         {isLoading ? (
           <PageLoader />
         ) : (accounts ?? []).length === 0 ? (

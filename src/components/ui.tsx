@@ -76,6 +76,110 @@ export function SectionTitle({
   );
 }
 
+/** A small tinted rounded icon square used in page/section headers. */
+function tintStyle(tint: string) {
+  return { backgroundColor: `${tint}1a`, color: tint };
+}
+
+/** Page-level header: tinted icon chip + display title + subtitle + action. */
+export function PageHeader({
+  icon,
+  tint = "#0f8a5f",
+  title,
+  subtitle,
+  action,
+}: {
+  icon?: ReactNode;
+  tint?: string;
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        {icon && (
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+            style={tintStyle(tint)}
+          >
+            {icon}
+          </span>
+        )}
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
+            {title}
+          </h1>
+          {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/** Card section header with a tinted icon chip. */
+export function SectionHead({
+  icon,
+  tint = "#0f8a5f",
+  title,
+  subtitle,
+  action,
+}: {
+  icon: ReactNode;
+  tint?: string;
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5">
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+          style={tintStyle(tint)}
+        >
+          {icon}
+        </span>
+        <div>
+          <h2 className="font-display text-base font-semibold leading-tight text-slate-900">
+            {title}
+          </h2>
+          {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/** Compact stat tile: uppercase label + big display value + hint. */
+export function StatTile({
+  label,
+  value,
+  hint,
+  tint = "#0f8a5f",
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tint?: string;
+}) {
+  return (
+    <Card className="p-4">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+        {label}
+      </div>
+      <div className="mt-1 flex items-baseline gap-1.5">
+        <span className="font-display text-2xl font-bold" style={{ color: tint }}>
+          {value}
+        </span>
+        {hint && <span className="text-xs text-slate-500">{hint}</span>}
+      </div>
+    </Card>
+  );
+}
+
 export function Field({
   label,
   htmlFor,

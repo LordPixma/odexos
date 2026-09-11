@@ -15,11 +15,13 @@ import {
   Field,
   Input,
   Modal,
+  PageHeader,
   PageLoader,
   Select,
   Textarea,
 } from "../components/ui";
 import {
+  CalendarIcon,
   ClockIcon,
   EditIcon,
   MapPinIcon,
@@ -169,27 +171,22 @@ export default function ActivitiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            Activities
-          </h1>
-          <p className="text-sm text-slate-500">
-            School runs, clubs, meetings and weekend plans — all in one place.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => setShowPast((v) => !v)}
-          >
-            {showPast ? "Upcoming only" : "Show past"}
-          </Button>
-          <Button onClick={openCreate}>
-            <PlusIcon /> Add activity
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={<CalendarIcon />}
+        tint="#2f74e0"
+        title="Activities"
+        subtitle="School runs, clubs, meetings and weekend plans — all in one place."
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setShowPast((v) => !v)}>
+              {showPast ? "Upcoming only" : "Show past"}
+            </Button>
+            <Button onClick={openCreate}>
+              <PlusIcon /> Add activity
+            </Button>
+          </div>
+        }
+      />
 
       {isLoading ? (
         <PageLoader />

@@ -1,7 +1,14 @@
 import { Link } from "react-router-dom";
 import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
-import { Avatar, Card, EmptyState, PageLoader } from "../components/ui";
+import {
+  Avatar,
+  Card,
+  EmptyState,
+  PageLoader,
+  SectionHead,
+  StatTile,
+} from "../components/ui";
 import {
   CalendarIcon,
   ClipboardIcon,
@@ -188,40 +195,6 @@ function TimelineRow({
   );
 }
 
-function CardHead({
-  icon,
-  tint,
-  title,
-  subtitle,
-  action,
-}: {
-  icon: React.ReactNode;
-  tint: string;
-  title: string;
-  subtitle?: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2.5">
-        <span
-          className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ backgroundColor: `${tint}1a`, color: tint }}
-        >
-          {icon}
-        </span>
-        <div>
-          <h2 className="font-display text-base font-semibold leading-tight text-slate-900">
-            {title}
-          </h2>
-          {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
-        </div>
-      </div>
-      {action}
-    </div>
-  );
-}
-
 export default function DashboardPage() {
   const { auth } = useAuth();
   const { data, isLoading } = useDashboard();
@@ -330,7 +303,7 @@ export default function DashboardPage() {
         <div className="space-y-6 lg:col-span-2">
           {/* Finances */}
           <Card className="p-5">
-            <CardHead
+            <SectionHead
               icon={<ReceiptIcon size={18} />}
               tint="#0f8a5f"
               title="Finances"
@@ -413,7 +386,7 @@ export default function DashboardPage() {
 
           {/* Today's schedule */}
           <Card className="p-5">
-            <CardHead
+            <SectionHead
               icon={<CalendarIcon size={18} />}
               tint="#2f74e0"
               title="Today's schedule"
@@ -452,25 +425,25 @@ export default function DashboardPage() {
         <div className="space-y-6">
           {/* At a glance */}
           <div className="grid grid-cols-2 gap-3">
-            <MiniStat
+            <StatTile
               label="Today"
               value={`${data.todayActivities.length}`}
               hint={data.todayActivities.length === 1 ? "activity" : "activities"}
               tint="#2f74e0"
             />
-            <MiniStat
+            <StatTile
               label="Next 7 days"
               value={`${data.upcomingActivities.length}`}
               hint="upcoming"
               tint="#7c5cf5"
             />
-            <MiniStat
+            <StatTile
               label="Family"
               value={`${data.members.length}`}
               hint={data.members.length === 1 ? "member" : "members"}
               tint="#0f8a5f"
             />
-            <MiniStat
+            <StatTile
               label="Accounts"
               value={`${data.finance.accountCount}`}
               hint="linked"
@@ -481,7 +454,7 @@ export default function DashboardPage() {
           {/* Budget alerts */}
           {data.budgetAlerts.length > 0 && (
             <Card className="p-5">
-              <CardHead
+              <SectionHead
                 icon={<TargetIcon size={18} />}
                 tint="#e0930f"
                 title="Budget alerts"
@@ -530,7 +503,7 @@ export default function DashboardPage() {
 
           {/* Coming up */}
           <Card className="p-5">
-            <CardHead
+            <SectionHead
               icon={<ClockIcon size={18} />}
               tint="#7c5cf5"
               title="Coming up"
@@ -571,7 +544,7 @@ export default function DashboardPage() {
           {/* Recent activity */}
           {data.recentTransactions.length > 0 && (
             <Card className="p-5">
-              <CardHead
+              <SectionHead
                 icon={<ReceiptIcon size={18} />}
                 tint="#0f8a5f"
                 title="Recent activity"
@@ -617,31 +590,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-  hint,
-  tint,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  tint: string;
-}) {
-  return (
-    <Card className="p-4">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-        {label}
-      </div>
-      <div className="mt-1 flex items-baseline gap-1.5">
-        <span className="font-display text-2xl font-bold" style={{ color: tint }}>
-          {value}
-        </span>
-        <span className="text-xs text-slate-500">{hint}</span>
-      </div>
-    </Card>
   );
 }

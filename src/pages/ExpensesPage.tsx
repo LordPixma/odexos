@@ -15,10 +15,11 @@ import {
   Field,
   Input,
   Modal,
+  PageHeader,
   PageLoader,
   Select,
 } from "../components/ui";
-import { EditIcon, PlusIcon, TrashIcon } from "../components/icons";
+import { EditIcon, PlusIcon, ReceiptIcon, TrashIcon } from "../components/icons";
 import { EXPENSE_COLORS } from "../lib/labels";
 import { formatDate, formatMoney, todayISODate } from "../lib/format";
 import { ApiError } from "../lib/api";
@@ -114,19 +115,17 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            Expenses
-          </h1>
-          <p className="text-sm text-slate-500">
-            Track what the family spends, month by month.
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <PlusIcon /> Add expense
-        </Button>
-      </div>
+      <PageHeader
+        icon={<ReceiptIcon />}
+        tint="#0f9d6b"
+        title="Expenses"
+        subtitle="Track what the family spends, month by month."
+        action={
+          <Button onClick={openCreate}>
+            <PlusIcon /> Add expense
+          </Button>
+        }
+      />
 
       <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
         <div className="flex flex-wrap items-center gap-3">
@@ -158,7 +157,7 @@ export default function ExpensesPage() {
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             Total
           </div>
-          <div className="text-2xl font-extrabold text-slate-900">
+          <div className="font-display text-2xl font-bold text-brand-700">
             {formatMoney(total, currency)}
           </div>
         </div>
