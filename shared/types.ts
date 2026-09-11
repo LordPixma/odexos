@@ -358,6 +358,17 @@ export interface FamilySettings {
   name: string;
   currency: string;
   alertEmails: boolean;
+  weeklyDigest: boolean;
+}
+
+export interface DigestPreview {
+  subject: string;
+  text: string;
+  html: string;
+}
+
+export interface DigestSendResult {
+  sent: number; // number of recipients emailed
 }
 
 export interface ApiError {
