@@ -13,6 +13,7 @@ import {
   Field,
   Input,
   Modal,
+  PageHeader,
   PageLoader,
   Select,
 } from "../components/ui";
@@ -179,27 +180,25 @@ export default function BudgetsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-            Budgets
-          </h1>
-          <p className="text-sm text-slate-500">
-            Monthly limits by category, tracked against expenses and bank spend.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-auto"
-          />
-          <Button onClick={openCreate} disabled={nothingToAdd}>
-            <PlusIcon /> Set budget
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={<TargetIcon />}
+        tint="#d9841a"
+        title="Budgets"
+        subtitle="Monthly limits by category, tracked against expenses and bank spend."
+        action={
+          <div className="flex items-center gap-2">
+            <Input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="w-auto"
+            />
+            <Button onClick={openCreate} disabled={nothingToAdd}>
+              <PlusIcon /> Set budget
+            </Button>
+          </div>
+        }
+      />
 
       {/* Alerts */}
       {alerts.length > 0 && (

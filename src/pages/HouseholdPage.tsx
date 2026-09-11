@@ -23,10 +23,16 @@ import {
   Field,
   Input,
   Modal,
+  PageHeader,
   PageLoader,
   Select,
 } from "../components/ui";
-import { EditIcon, PlusIcon, TrashIcon } from "../components/icons";
+import {
+  ClipboardIcon,
+  EditIcon,
+  PlusIcon,
+  TrashIcon,
+} from "../components/icons";
 import { ApiError } from "../lib/api";
 import {
   LIST_TYPE_LABELS,
@@ -523,14 +529,12 @@ export default function HouseholdPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-          Household
-        </h1>
-        <p className="text-sm text-slate-500">
-          Shared lists and the week's meal plan.
-        </p>
-      </div>
+      <PageHeader
+        icon={<ClipboardIcon />}
+        tint="#7c5cf5"
+        title="Household"
+        subtitle="Shared lists and the week's meal plan."
+      />
 
       <div className="inline-flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
         {(["lists", "meals"] as const).map((t) => (

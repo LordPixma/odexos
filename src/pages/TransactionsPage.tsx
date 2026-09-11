@@ -18,10 +18,11 @@ import {
   Field,
   Input,
   Modal,
+  PageHeader,
   PageLoader,
   Select,
 } from "../components/ui";
-import { TrashIcon } from "../components/icons";
+import { ClipboardIcon, TrashIcon } from "../components/icons";
 import { EXPENSE_COLORS } from "../lib/labels";
 import { formatDate, formatMoney } from "../lib/format";
 import { todayISODate } from "../lib/format";
@@ -104,19 +105,17 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-          Transactions
-        </h1>
-        <p className="text-sm text-slate-500">
-          Everything flowing through your linked bank accounts, auto-categorised.
-        </p>
-        </div>
-        <Button variant="secondary" onClick={() => setRulesOpen(true)}>
-          Category rules{rules.length > 0 ? ` (${rules.length})` : ""}
-        </Button>
-      </div>
+      <PageHeader
+        icon={<ClipboardIcon />}
+        tint="#7c5cf5"
+        title="Transactions"
+        subtitle="Everything flowing through your linked bank accounts, auto-categorised."
+        action={
+          <Button variant="secondary" onClick={() => setRulesOpen(true)}>
+            Category rules{rules.length > 0 ? ` (${rules.length})` : ""}
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <PageLoader />
@@ -140,12 +139,12 @@ export default function TransactionsPage() {
                 <Stat
                   label="Spent"
                   value={formatMoney(insights?.totalSpentCents ?? 0, currency)}
-                  accent="#b45309"
+                  accent="#d9841a"
                 />
                 <Stat
                   label="Income"
                   value={formatMoney(insights?.totalIncomeCents ?? 0, currency)}
-                  accent="#0f766e"
+                  accent="#0f9d6b"
                 />
                 <Stat
                   label="Transactions"
