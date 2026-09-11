@@ -40,6 +40,23 @@ export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
   other: "Other",
 };
 
+export const RECURRENCE_RULES = [
+  "none",
+  "daily",
+  "weekdays",
+  "weekly",
+  "monthly",
+] as const;
+export type RecurrenceRule = (typeof RECURRENCE_RULES)[number];
+
+export const RECURRENCE_LABELS: Record<RecurrenceRule, string> = {
+  none: "Does not repeat",
+  daily: "Every day",
+  weekdays: "Every weekday (Mon–Fri)",
+  weekly: "Every week",
+  monthly: "Every month",
+};
+
 export interface Activity {
   id: string;
   familyId: string;
@@ -51,6 +68,9 @@ export interface Activity {
   allDay: boolean;
   memberId: string | null; // assigned member, null = whole family
   notes: string | null;
+  recurrence: RecurrenceRule;
+  recurrenceUntil: string | null; // YYYY-MM-DD
+  seriesId: string | null; // set on generated occurrences → the base activity id
   createdBy: string;
   createdAt: string;
 }
@@ -257,6 +277,87 @@ export interface DashboardData {
   finance: FinanceSummary;
   budgetAlerts: BudgetProgress[]; // budgets at warning/over this month
   recentTransactions: Transaction[]; // latest synced bank activity
+}
+
+// ---- Shared lists & meal planning ----
+
+export const LIST_TYPES = ["shopping", "todo", "chores", "custom"] as const;
+export type ListType = (typeof LIST_TYPES)[number];
+
+export const LIST_TYPE_LABELS: Record<ListType, string> = {
+  shopping: "Shopping",
+  todo: "To-do",
+  chores: "Chores",
+  custom: "List",
+};
+
+export interface ListItem {
+  id: string;
+  listId: string;
+  text: string;
+  done: boolean;
+  assignedTo: string | null;
+  position: number;
+  createdAt: string;
+}
+
+export interface List {
+  id: string;
+  familyId: string;
+  name: string;
+  type: ListType;
+  createdAt: string;
+}
+
+export interface ListWithItems extends List {
+  items: ListItem[];
+}
+
+export const MEAL_SLOTS = ["breakfast", "lunch", "dinner", "snack"] as const;
+export type MealSlot = (typeof MEAL_SLOTS)[number];
+
+export const MEAL_SLOT_LABELS: Record<MealSlot, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snack",
+};
+
+export interface Meal {
+  id: string;
+  familyId: string;
+  date: string; // YYYY-MM-DD
+  slot: MealSlot;
+  title: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+// ---- Notifications & family settings ----
+
+export type NotificationType = "budget_warning" | "budget_over";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  category: string | null;
+  month: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  notifications: Notification[];
+  unread: number;
+}
+
+export interface FamilySettings {
+  id: string;
+  name: string;
+  currency: string;
+  alertEmails: boolean;
 }
 
 export interface ApiError {

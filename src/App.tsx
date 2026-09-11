@@ -5,6 +5,7 @@ import AppLayout from "./components/AppLayout";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
+import HouseholdPage from "./pages/HouseholdPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import BudgetsPage from "./pages/BudgetsPage";
@@ -29,6 +30,7 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="activities" element={<ActivitiesPage />} />
+        <Route path="household" element={<HouseholdPage />} />
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="budgets" element={<BudgetsPage />} />

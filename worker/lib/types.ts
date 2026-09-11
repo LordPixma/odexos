@@ -15,6 +15,10 @@ export interface Bindings {
   TRUELAYER_REDIRECT_URI?: string; // must match the TrueLayer console
   ENCRYPTION_KEY?: string; // secret — encrypts stored bank tokens
   APP_URL?: string; // e.g. https://odexos.example.com (for redirects)
+
+  // Email alert delivery (optional — falls back to logging when unset).
+  RESEND_API_KEY?: string; // secret
+  RESEND_FROM?: string; // e.g. "OdexOS <alerts@yourdomain.com>"
 }
 
 export interface Variables {

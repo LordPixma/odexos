@@ -17,7 +17,9 @@ This repository is the foundation: a working, deployable full-stack app running
 | Module | What it does |
 | --- | --- |
 | 🔐 **Accounts & family** | Create a family, invite members, role-based access (owner / adult / child / member). Session-cookie auth with PBKDF2-hashed passwords. |
-| 🗓️ **Activities** | School runs, clubs, meetings, weekend plans, appointments and chores — assign to a family member, set times/locations, grouped by day. |
+| 🗓️ **Activities** | School runs, clubs, meetings, weekend plans, appointments and chores — assign to a family member, set times/locations, grouped by day. **Recurring** (daily / weekdays / weekly / monthly, with an optional end date). |
+| 🧺 **Household** | Family-shared **lists** (shopping / to-do / chores) with checkable, assignable items, plus a weekly **meal planner**. |
+| 🔔 **Alerts** | In-app **notifications** (with an unread badge) when a budget crosses a threshold, plus **email** delivery via Resend (falls back to logging when unconfigured). Deduped so the same alert isn't repeated. |
 | 💷 **Expenses** | Log family spending by category and payer, filter by month, see monthly totals and category breakdowns. |
 | 📊 **Finance** | Track current accounts, savings, cards, investments and pensions. Automatic **net-worth** (assets − liabilities). **Connect real banks via Open Banking (TrueLayer)** to sync balances automatically. |
 | 🧾 **Transactions** | Bank transactions synced from linked accounts, **auto-categorised**, with monthly spending insights (by category + top merchants). Re-categorise any transaction; overrides stick. Define **custom category rules** (merchant → category) that beat the built-in categoriser and re-apply to existing transactions. |
@@ -213,13 +215,14 @@ values — or leave them blank to use the mock provider.
 
 ## Roadmap
 
-The foundation now covers activities, expenses, finance, bank sync, transaction
-sync with auto-categorisation **and budgets with alerts**. Natural next steps:
+OdexOS now covers accounts & roles, recurring activities, expenses, finance,
+bank + transaction sync with editable categorisation, budgets with in-app and
+email alerts, shared lists, and meal planning. Natural next steps:
 
-- **Alert delivery** — email/push when a budget is breached (in-app today; a
-  Cron + email provider such as MailChannels/Resend would deliver a digest).
-- **Recurring activities** — repeat rules for the weekly school run, clubs, etc.
-- **Shared lists & meal planning** — weekend plans, shopping, chores.
+- **Web/native push** — real push notifications (VAPID + service worker) on top
+  of the existing in-app notifications.
+- **Weekly family digest** — a scheduled summary email of the week ahead + spend.
+- **Calendar sync** — two-way Google Calendar / iCal for activities.
 - **Calendar sync** — two-way sync with Google Calendar / iCal feeds.
 - **Budgets & alerts** — monthly budgets per category with nudges when close.
 - **Shared lists & meal planning** — weekend plans, shopping, chores.

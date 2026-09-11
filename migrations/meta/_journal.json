@@ -36,6 +36,27 @@
       "when": 1789123206459,
       "tag": "0004_category_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789123818388,
+      "tag": "0005_activity_recurrence",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789124075355,
+      "tag": "0006_household",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1789124461258,
+      "tag": "0007_notifications",
+      "breakpoints": true
     }
   ]
 }
