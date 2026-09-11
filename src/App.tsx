@@ -12,6 +12,8 @@ import BudgetsPage from "./pages/BudgetsPage";
 import FinancePage from "./pages/FinancePage";
 import MembersPage from "./pages/MembersPage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 export default function App() {
   const { auth, isLoading } = useAuth();
@@ -26,8 +28,10 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Accepting an invite works whether or not there's a session. */}
+      {/* These work whether or not there's a session. */}
       <Route path="/invite/:token" element={<AcceptInvitePage />} />
+      <Route path="/forgot" element={<ForgotPasswordPage />} />
+      <Route path="/reset/:token" element={<ResetPasswordPage />} />
       {auth ? (
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />

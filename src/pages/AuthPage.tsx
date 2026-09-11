@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useLogin, useRegister } from "../lib/auth";
 import { ApiError } from "../lib/api";
 import { Button, ErrorBanner, Field, Input } from "../components/ui";
@@ -133,6 +134,17 @@ export default function AuthPage() {
                 }
               />
             </Field>
+
+            {mode === "login" && (
+              <div className="-mt-1 text-right">
+                <Link
+                  to="/forgot"
+                  className="text-sm font-medium text-brand-600 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            )}
 
             <ErrorBanner message={error} />
 

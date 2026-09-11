@@ -26,6 +26,11 @@ export interface InvitePreview {
   role: Role;
 }
 
+/** Public details shown on the password-reset page (no session required). */
+export interface ResetPreview {
+  email: string;
+}
+
 export interface AuthState {
   member: Member;
   family: { id: string; name: string };

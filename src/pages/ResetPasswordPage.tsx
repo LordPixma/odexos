@@ -1,16 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useInvitePreview } from "../lib/queries";
-import { useAcceptInvite } from "../lib/auth";
+import { useResetToken, useResetPassword } from "../lib/auth";
 import { ApiError } from "../lib/api";
 import { Button, ErrorBanner, Field, Input, Spinner } from "../components/ui";
 import AuthShell from "../components/AuthShell";
 
-export default function AcceptInvitePage() {
+export default function ResetPasswordPage() {
   const { token = "" } = useParams();
   const navigate = useNavigate();
-  const preview = useInvitePreview(token);
-  const accept = useAcceptInvite(token);
+  const preview = useResetToken(token);
+  const reset = useResetPassword();
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -27,7 +26,10 @@ export default function AcceptInvitePage() {
       setLocalError("Passwords don't match.");
       return;
     }
-    accept.mutate({ password }, { onSuccess: () => navigate("/", { replace: true }) });
+    reset.mutate(
+      { token, password },
+      { onSuccess: () => navigate("/", { replace: true }) },
+    );
   }
 
   if (preview.isLoading) {
@@ -43,7 +45,7 @@ export default function AcceptInvitePage() {
   if (preview.isError || !preview.data) {
     const message =
       (preview.error as ApiError | null)?.message ??
-      "This invite link is invalid or has already been used.";
+      "This reset link is invalid or has already been used.";
     return (
       <AuthShell>
         <div className="text-center">
@@ -51,43 +53,35 @@ export default function AcceptInvitePage() {
             ⚠️
           </div>
           <h2 className="font-display text-xl font-bold text-slate-900">
-            Invite unavailable
+            Reset link unavailable
           </h2>
           <p className="mt-2 text-sm text-slate-500">{message}</p>
           <Link
-            to="/"
+            to="/forgot"
             className="mt-5 inline-block text-sm font-semibold text-brand-600 hover:underline"
           >
-            Go to sign in
+            Request a new link
           </Link>
         </div>
       </AuthShell>
     );
   }
 
-  const invite = preview.data;
-  const serverError = (accept.error as ApiError | null)?.message;
+  const serverError = (reset.error as ApiError | null)?.message;
 
   return (
     <AuthShell>
       <div className="mb-6 text-center">
         <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">
-          Join {invite.familyName}
+          Set a new password
         </h2>
         <p className="mt-1.5 text-sm text-slate-500">
-          Hi {invite.name.split(" ")[0]} — set a password to activate your account.
+          for {preview.data.email}
         </p>
       </div>
 
-      <div className="mb-5 rounded-xl bg-sand-100 px-4 py-3 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-slate-500">Signing in as</span>
-          <span className="font-medium text-slate-800">{invite.email}</span>
-        </div>
-      </div>
-
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Create a password" hint="At least 8 characters">
+        <Field label="New password" hint="At least 8 characters">
           <Input
             type="password"
             value={password}
@@ -112,8 +106,8 @@ export default function AcceptInvitePage() {
 
         <ErrorBanner message={localError ?? serverError} />
 
-        <Button type="submit" className="w-full" disabled={accept.isPending}>
-          {accept.isPending ? "Setting up…" : `Join ${invite.familyName}`}
+        <Button type="submit" className="w-full" disabled={reset.isPending}>
+          {reset.isPending ? "Saving…" : "Set password & sign in"}
         </Button>
       </form>
     </AuthShell>
