@@ -305,6 +305,41 @@ export const budgets = sqliteTable(
   }),
 );
 
+// Family-defined auto-categorisation rules: when a transaction's merchant or
+// description contains `pattern`, assign `category`. Checked before the
+// built-in keyword rules; higher `priority` wins.
+export const categoryRules = sqliteTable(
+  "category_rules",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    pattern: text("pattern").notNull(),
+    category: text("category", {
+      enum: [
+        "groceries",
+        "transport",
+        "utilities",
+        "school",
+        "leisure",
+        "health",
+        "housing",
+        "other",
+      ],
+    }).notNull(),
+    priority: integer("priority").notNull().default(0),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    familyIdx: index("category_rules_family_idx").on(t.familyId),
+  }),
+);
+
 export type FamilyRow = typeof families.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
@@ -314,3 +349,4 @@ export type BankConnectionRow = typeof bankConnections.$inferSelect;
 export type BankOauthStateRow = typeof bankOauthStates.$inferSelect;
 export type TransactionRow = typeof transactions.$inferSelect;
 export type BudgetRow = typeof budgets.$inferSelect;
+export type CategoryRuleRow = typeof categoryRules.$inferSelect;

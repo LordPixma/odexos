@@ -29,6 +29,13 @@
       "when": 1789119622217,
       "tag": "0003_budgets",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789123206459,
+      "tag": "0004_category_rules",
+      "breakpoints": true
     }
   ]
 }

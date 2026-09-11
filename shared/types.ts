@@ -188,6 +188,20 @@ export interface SpendingInsights {
   topMerchants: { merchant: string; amountCents: number; count: number }[];
 }
 
+// Family-defined auto-categorisation rule.
+export interface CategoryRule {
+  id: string;
+  pattern: string;
+  category: ExpenseCategory;
+  priority: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApplyRulesResult {
+  updated: number;
+}
+
 // A budget's category is null for the overall/total monthly limit.
 export type BudgetCategory = ExpenseCategory | null;
 export type BudgetStatus = "ok" | "warning" | "over";

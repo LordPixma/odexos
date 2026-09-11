@@ -3,6 +3,7 @@ import type {
   ActivityRow,
   BankConnectionRow,
   BudgetRow,
+  CategoryRuleRow,
   ExpenseRow,
   TransactionRow,
   UserRow,
@@ -12,6 +13,7 @@ import type {
   Activity,
   BankConnection,
   Budget,
+  CategoryRule,
   Expense,
   Member,
   Transaction,
@@ -95,6 +97,17 @@ export function toTransaction(row: TransactionRow): Transaction {
     date: row.date,
     bookedAt: row.bookedAt,
     createdAt: row.createdAt,
+  };
+}
+
+export function toCategoryRule(row: CategoryRuleRow): CategoryRule {
+  return {
+    id: row.id,
+    pattern: row.pattern,
+    category: row.category,
+    priority: row.priority,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }
 
