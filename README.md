@@ -138,6 +138,20 @@ npm run deploy
 This builds the SPA and deploys the Worker (with the assets and D1 binding) to
 your Cloudflare account.
 
+### Continuous deployment (GitHub Actions)
+
+`.github/workflows/deploy.yml` auto-deploys on every push to `main`: it
+typechecks, builds, applies pending D1 migrations (`--remote`), and runs
+`wrangler deploy`. Add two repository secrets first
+(**Settings → Secrets and variables → Actions**):
+
+| Secret | Value |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | A token with **Workers Scripts: Edit** and **D1: Edit** on your account |
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account id |
+
+You can also run it on demand from the **Actions** tab (workflow_dispatch).
+
 ---
 
 ## Handy scripts
