@@ -138,6 +138,15 @@ export function RefreshIcon({ className = "", size = 16 }: IconProps) {
   );
 }
 
+export function ReceiptIcon({ className = "", size = 20 }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path d="M5 3v18l2.5-1.5L10 21l2-1.5L14 21l2.5-1.5L19 21V3l-2.5 1.5L14 3l-2 1.5L10 3 7.5 4.5 5 3Z" />
+      <path d="M8.5 9h7M8.5 13h7" />
+    </svg>
+  );
+}
+
 export function LinkIcon({ className = "", size = 16 }: IconProps) {
   return (
     <svg {...base(size, className)}>

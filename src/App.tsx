@@ -6,6 +6,7 @@ import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import TransactionsPage from "./pages/TransactionsPage";
 import FinancePage from "./pages/FinancePage";
 import MembersPage from "./pages/MembersPage";
 
@@ -28,6 +29,7 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="activities" element={<ActivitiesPage />} />
         <Route path="expenses" element={<ExpensesPage />} />
+        <Route path="transactions" element={<TransactionsPage />} />
         <Route path="finance" element={<FinancePage />} />
         <Route path="family" element={<MembersPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

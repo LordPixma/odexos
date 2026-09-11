@@ -3,6 +3,7 @@ import type {
   ActivityRow,
   BankConnectionRow,
   ExpenseRow,
+  TransactionRow,
   UserRow,
 } from "../db/schema";
 import type {
@@ -11,6 +12,7 @@ import type {
   BankConnection,
   Expense,
   Member,
+  Transaction,
 } from "@shared/types";
 
 export function toMember(row: UserRow): Member {
@@ -70,6 +72,26 @@ export function toAccount(row: AccountRow): Account {
     connectionId: row.connectionId,
     ownerMemberId: row.ownerMemberId,
     lastSyncedAt: row.lastSyncedAt,
+    createdAt: row.createdAt,
+  };
+}
+
+export function toTransaction(row: TransactionRow): Transaction {
+  return {
+    id: row.id,
+    familyId: row.familyId,
+    accountId: row.accountId,
+    connectionId: row.connectionId,
+    description: row.description,
+    merchant: row.merchant,
+    amountCents: row.amountCents,
+    currency: row.currency,
+    direction: row.direction,
+    category: row.category,
+    categoryLocked: row.categoryLocked,
+    rawCategory: row.rawCategory,
+    date: row.date,
+    bookedAt: row.bookedAt,
     createdAt: row.createdAt,
   };
 }

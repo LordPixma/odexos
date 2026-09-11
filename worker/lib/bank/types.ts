@@ -1,4 +1,8 @@
-import type { AccountType, BankProviderId } from "@shared/types";
+import type {
+  AccountType,
+  BankProviderId,
+  TransactionDirection,
+} from "@shared/types";
 
 export interface ProviderTokens {
   accessToken: string;
@@ -6,13 +10,29 @@ export interface ProviderTokens {
   expiresAt: string; // ISO 8601
 }
 
+/** Which Data API endpoint family an account belongs to. */
+export type ProviderAccountKind = "account" | "card";
+
 export interface ProviderAccount {
   externalId: string;
+  kind: ProviderAccountKind;
   name: string;
   type: AccountType;
   institution: string;
   balanceCents: number;
   currency: string;
+}
+
+export interface ProviderTransaction {
+  externalId: string;
+  description: string;
+  merchant: string | null;
+  amountCents: number; // signed: negative = money out, positive = money in
+  direction: TransactionDirection;
+  currency: string;
+  date: string; // YYYY-MM-DD
+  bookedAt: string | null; // ISO 8601
+  rawCategory: string | null;
 }
 
 /**
@@ -32,4 +52,10 @@ export interface BankProvider {
   refreshTokens(refreshToken: string): Promise<ProviderTokens>;
   /** Fetch the accounts + balances the consent grants access to. */
   fetchAccounts(accessToken: string): Promise<ProviderAccount[]>;
+  /** Fetch transactions for one account since `from` (YYYY-MM-DD, inclusive). */
+  fetchTransactions(
+    accessToken: string,
+    account: { externalId: string; kind: ProviderAccountKind },
+    from: string,
+  ): Promise<ProviderTransaction[]>;
 }

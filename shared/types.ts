@@ -155,6 +155,37 @@ export interface SyncResult {
   connections: number;
   accountsUpdated: number;
   accountsCreated: number;
+  transactionsAdded: number;
+}
+
+export type TransactionDirection = "debit" | "credit";
+
+export interface Transaction {
+  id: string;
+  familyId: string;
+  accountId: string;
+  connectionId: string | null;
+  description: string;
+  merchant: string | null;
+  amountCents: number; // signed: negative = money out, positive = money in
+  currency: string;
+  direction: TransactionDirection;
+  category: ExpenseCategory;
+  categoryLocked: boolean;
+  rawCategory: string | null;
+  date: string; // YYYY-MM-DD
+  bookedAt: string | null;
+  createdAt: string;
+}
+
+export interface SpendingInsights {
+  month: string; // YYYY-MM
+  currency: string;
+  totalSpentCents: number; // sum of debits (money out)
+  totalIncomeCents: number; // sum of credits (money in)
+  transactionCount: number;
+  byCategory: { category: ExpenseCategory; amountCents: number }[];
+  topMerchants: { merchant: string; amountCents: number; count: number }[];
 }
 
 export interface FinanceSummary {

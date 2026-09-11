@@ -1,13 +1,17 @@
 import { and, eq } from "drizzle-orm";
 import type { Context } from "hono";
 import type { Db } from "../../db/client";
-import { accounts, bankConnections } from "../../db/schema";
+import { accounts, bankConnections, transactions } from "../../db/schema";
 import type { BankConnectionRow } from "../../db/schema";
 import { decryptSecret, encryptSecret, generateId } from "../crypto";
 import type { AppEnv, Bindings } from "../types";
+import { categorize } from "./categorize";
 import { MockProvider } from "./mock";
 import { TrueLayerProvider } from "./truelayer";
-import type { BankProvider } from "./types";
+import type { BankProvider, ProviderAccount } from "./types";
+
+// How far back to pull transactions on each sync (provider dedupe handles overlap).
+const TRANSACTION_LOOKBACK_DAYS = 90;
 
 const DEV_ENCRYPTION_KEY = "odexos-dev-encryption-key-change-in-production";
 
@@ -95,9 +99,66 @@ async function ensureAccessToken(
 export interface ConnectionSyncResult {
   created: number;
   updated: number;
+  transactionsAdded: number;
 }
 
-/** Fetches balances for a connection and upserts them into the accounts table. */
+function lookbackDate(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+}
+
+/** Pulls new transactions for one account and inserts them (dedup by ref). */
+async function syncTransactions(
+  db: Db,
+  connection: BankConnectionRow,
+  provider: BankProvider,
+  accessToken: string,
+  pa: ProviderAccount,
+  accountId: string,
+): Promise<number> {
+  const providerTxns = await provider.fetchTransactions(
+    accessToken,
+    { externalId: pa.externalId, kind: pa.kind },
+    lookbackDate(TRANSACTION_LOOKBACK_DAYS),
+  );
+  if (providerTxns.length === 0) return 0;
+
+  const existing = await db.query.transactions.findMany({
+    where: eq(transactions.accountId, accountId),
+    columns: { externalRef: true },
+  });
+  const seen = new Set(existing.map((t) => t.externalRef));
+
+  const rows = providerTxns
+    .filter((t) => !seen.has(t.externalId))
+    .map((t) => ({
+      id: generateId(),
+      familyId: connection.familyId,
+      accountId,
+      connectionId: connection.id,
+      externalRef: t.externalId,
+      description: t.description,
+      merchant: t.merchant,
+      amountCents: t.amountCents,
+      currency: t.currency,
+      direction: t.direction,
+      category: categorize(t),
+      rawCategory: t.rawCategory,
+      date: t.date,
+      bookedAt: t.bookedAt,
+    }));
+
+  if (rows.length === 0) return 0;
+  // Insert one row at a time: Drizzle's multi-row insert into D1 misbinds
+  // parameters in a way that trips foreign-key checks, so we avoid it here.
+  for (const row of rows) {
+    await db.insert(transactions).values(row);
+  }
+  return rows.length;
+}
+
+/** Syncs balances AND transactions for a connection. */
 export async function syncConnection(
   db: Db,
   env: Bindings,
@@ -106,6 +167,7 @@ export async function syncConnection(
   const provider = getProvider(env);
   let created = 0;
   let updated = 0;
+  let transactionsAdded = 0;
 
   try {
     const accessToken = await ensureAccessToken(db, env, provider, connection);
@@ -116,6 +178,9 @@ export async function syncConnection(
     });
     const byRef = new Map(existing.map((a) => [a.externalRef, a]));
     const now = new Date().toISOString();
+
+    // Map each provider account to its OdexOS account id as we upsert balances.
+    const linked: { pa: ProviderAccount; accountId: string }[] = [];
 
     for (const pa of providerAccounts) {
       const match = byRef.get(pa.externalId);
@@ -131,9 +196,11 @@ export async function syncConnection(
           })
           .where(eq(accounts.id, match.id));
         updated++;
+        linked.push({ pa, accountId: match.id });
       } else {
+        const id = generateId();
         await db.insert(accounts).values({
-          id: generateId(),
+          id,
           familyId: connection.familyId,
           name: pa.name,
           institution: pa.institution,
@@ -146,7 +213,19 @@ export async function syncConnection(
           lastSyncedAt: now,
         });
         created++;
+        linked.push({ pa, accountId: id });
       }
+    }
+
+    for (const { pa, accountId } of linked) {
+      transactionsAdded += await syncTransactions(
+        db,
+        connection,
+        provider,
+        accessToken,
+        pa,
+        accountId,
+      );
     }
 
     await db
@@ -162,7 +241,7 @@ export async function syncConnection(
     throw err;
   }
 
-  return { created, updated };
+  return { created, updated, transactionsAdded };
 }
 
 /**
