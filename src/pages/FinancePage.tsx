@@ -77,7 +77,7 @@ function SummaryCard({
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
         {label}
       </div>
-      <div className="mt-2 text-2xl font-extrabold" style={{ color: accent }}>
+      <div className="mt-2 font-display text-2xl font-bold" style={{ color: accent }}>
         {value}
       </div>
     </Card>

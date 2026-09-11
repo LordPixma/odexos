@@ -46,7 +46,7 @@ function Stat({
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
         {label}
       </div>
-      <div className="mt-1 text-xl font-extrabold" style={{ color: accent }}>
+      <div className="mt-1 font-display text-xl font-bold" style={{ color: accent }}>
         {value}
       </div>
     </div>

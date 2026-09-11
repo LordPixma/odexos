@@ -1,31 +1,33 @@
 import type { AccountType, ActivityCategory, ExpenseCategory } from "@shared/types";
 
+// A cohesive, slightly-muted categorical palette that sits well with the
+// jade/honey brand.
 export const ACTIVITY_COLORS: Record<ActivityCategory, string> = {
-  school_run: "#0ea5e9",
-  club: "#8b5cf6",
-  meeting: "#f59e0b",
-  weekend: "#10b981",
-  appointment: "#ef4444",
-  chore: "#64748b",
-  other: "#6366f1",
+  school_run: "#2f74e0",
+  club: "#7c5cf5",
+  meeting: "#e0930f",
+  weekend: "#0891b2",
+  appointment: "#e5484d",
+  chore: "#7c8695",
+  other: "#0f8a5f",
 };
 
 export const EXPENSE_COLORS: Record<ExpenseCategory, string> = {
-  groceries: "#10b981",
-  transport: "#0ea5e9",
-  utilities: "#f59e0b",
-  school: "#8b5cf6",
-  leisure: "#ec4899",
-  health: "#ef4444",
-  housing: "#14b8a6",
-  other: "#64748b",
+  groceries: "#0f9d6b",
+  transport: "#2f74e0",
+  utilities: "#e0930f",
+  school: "#7c5cf5",
+  leisure: "#e93d82",
+  health: "#e5484d",
+  housing: "#0891b2",
+  other: "#7c8695",
 };
 
 export const ACCOUNT_COLORS: Record<AccountType, string> = {
-  current: "#4f46e5",
-  savings: "#10b981",
-  credit: "#ef4444",
-  investment: "#8b5cf6",
-  pension: "#0ea5e9",
-  cash: "#f59e0b",
+  current: "#0f8a5f",
+  savings: "#0f9d6b",
+  credit: "#e5484d",
+  investment: "#7c5cf5",
+  pension: "#2f74e0",
+  cash: "#e0930f",
 };
