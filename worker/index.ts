@@ -10,6 +10,7 @@ import activityRoutes from "./routes/activities";
 import expenseRoutes from "./routes/expenses";
 import financeRoutes, { bankCallback } from "./routes/finance";
 import dashboardRoutes from "./routes/dashboard";
+import householdRoutes from "./routes/household";
 
 const app = new Hono<AppEnv>();
 
@@ -31,6 +32,7 @@ app.route("/api/members", memberRoutes);
 app.route("/api/activities", activityRoutes);
 app.route("/api/expenses", expenseRoutes);
 app.route("/api/finance", financeRoutes);
+app.route("/api/household", householdRoutes);
 app.route("/api/dashboard", dashboardRoutes);
 
 // Unknown API routes → JSON 404 (never fall through to the SPA).

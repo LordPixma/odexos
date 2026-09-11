@@ -346,6 +346,78 @@ export const categoryRules = sqliteTable(
   }),
 );
 
+// Shared family lists (shopping, to-do, chores).
+export const lists = sqliteTable(
+  "lists",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    type: text("type", { enum: ["shopping", "todo", "chores", "custom"] })
+      .notNull()
+      .default("custom"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    familyIdx: index("lists_family_idx").on(t.familyId),
+  }),
+);
+
+export const listItems = sqliteTable(
+  "list_items",
+  {
+    id: text("id").primaryKey(),
+    listId: text("list_id")
+      .notNull()
+      .references(() => lists.id, { onDelete: "cascade" }),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    done: integer("done", { mode: "boolean" }).notNull().default(false),
+    assignedTo: text("assigned_to").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    position: integer("position").notNull().default(0),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    listIdx: index("list_items_list_idx").on(t.listId),
+  }),
+);
+
+// Weekly meal planner: one row per planned meal.
+export const meals = sqliteTable(
+  "meals",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    date: text("date").notNull(), // YYYY-MM-DD
+    slot: text("slot", { enum: ["breakfast", "lunch", "dinner", "snack"] })
+      .notNull()
+      .default("dinner"),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    familyDateIdx: index("meals_family_date_idx").on(t.familyId, t.date),
+  }),
+);
+
 export type FamilyRow = typeof families.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
@@ -356,3 +428,6 @@ export type BankOauthStateRow = typeof bankOauthStates.$inferSelect;
 export type TransactionRow = typeof transactions.$inferSelect;
 export type BudgetRow = typeof budgets.$inferSelect;
 export type CategoryRuleRow = typeof categoryRules.$inferSelect;
+export type ListRow = typeof lists.$inferSelect;
+export type ListItemRow = typeof listItems.$inferSelect;
+export type MealRow = typeof meals.$inferSelect;

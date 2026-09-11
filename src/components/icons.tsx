@@ -138,6 +138,16 @@ export function RefreshIcon({ className = "", size = 16 }: IconProps) {
   );
 }
 
+export function ClipboardIcon({ className = "", size = 20 }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1.5H9V4Z" />
+      <path d="M8.5 11h7M8.5 15h5" />
+    </svg>
+  );
+}
+
 export function TargetIcon({ className = "", size = 20 }: IconProps) {
   return (
     <svg {...base(size, className)}>

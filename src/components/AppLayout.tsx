@@ -4,6 +4,7 @@ import { Avatar } from "./ui";
 import {
   CalendarIcon,
   ChartIcon,
+  ClipboardIcon,
   HomeIcon,
   LogoutIcon,
   ReceiptIcon,
@@ -23,6 +24,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: HomeIcon, end: true },
   { to: "/activities", label: "Activities", icon: CalendarIcon },
+  { to: "/household", label: "Household", icon: ClipboardIcon },
   { to: "/expenses", label: "Expenses", icon: WalletIcon },
   { to: "/transactions", label: "Transactions", icon: ReceiptIcon },
   { to: "/budgets", label: "Budgets", icon: TargetIcon },

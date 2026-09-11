@@ -5,6 +5,9 @@ import type {
   BudgetRow,
   CategoryRuleRow,
   ExpenseRow,
+  ListItemRow,
+  ListRow,
+  MealRow,
   TransactionRow,
   UserRow,
 } from "../db/schema";
@@ -15,6 +18,9 @@ import type {
   Budget,
   CategoryRule,
   Expense,
+  List,
+  ListItem,
+  Meal,
   Member,
   Transaction,
 } from "@shared/types";
@@ -99,6 +105,40 @@ export function toTransaction(row: TransactionRow): Transaction {
     rawCategory: row.rawCategory,
     date: row.date,
     bookedAt: row.bookedAt,
+    createdAt: row.createdAt,
+  };
+}
+
+export function toList(row: ListRow): List {
+  return {
+    id: row.id,
+    familyId: row.familyId,
+    name: row.name,
+    type: row.type,
+    createdAt: row.createdAt,
+  };
+}
+
+export function toListItem(row: ListItemRow): ListItem {
+  return {
+    id: row.id,
+    listId: row.listId,
+    text: row.text,
+    done: row.done,
+    assignedTo: row.assignedTo,
+    position: row.position,
+    createdAt: row.createdAt,
+  };
+}
+
+export function toMeal(row: MealRow): Meal {
+  return {
+    id: row.id,
+    familyId: row.familyId,
+    date: row.date,
+    slot: row.slot,
+    title: row.title,
+    notes: row.notes,
     createdAt: row.createdAt,
   };
 }

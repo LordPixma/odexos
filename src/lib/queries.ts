@@ -16,6 +16,10 @@ import type {
   Expense,
   FinanceSummary,
   LinkStartResponse,
+  List,
+  ListItem,
+  ListWithItems,
+  Meal,
   Member,
   SpendingInsights,
   SyncResult,
@@ -370,6 +374,127 @@ export function useApplyCategoryRules() {
   return useMutation({
     mutationFn: () =>
       api.post<ApplyRulesResult>("/finance/category-rules/apply"),
+    onSuccess: invalidate,
+  });
+}
+
+// ---- Household: lists ----
+function useInvalidateLists() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: ["lists"] });
+}
+
+export function useLists() {
+  return useQuery({
+    queryKey: ["lists"],
+    queryFn: async () =>
+      (await api.get<{ lists: ListWithItems[] }>("/household/lists")).lists,
+  });
+}
+
+export function useCreateList() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: (body: { name: string; type: string }) =>
+      api.post<{ list: List }>("/household/lists", body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRenameList() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      api.patch(`/household/lists/${id}`, { name }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteList() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/household/lists/${id}`),
+    onSuccess: invalidate,
+  });
+}
+
+export function useAddListItem() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: ({ listId, ...body }: { listId: string; text: string; assignedTo?: string | null }) =>
+      api.post<{ item: ListItem }>(`/household/lists/${listId}/items`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateListItem() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      api.patch<{ item: ListItem }>(`/household/items/${id}`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteListItem() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/household/items/${id}`),
+    onSuccess: invalidate,
+  });
+}
+
+export function useClearDone() {
+  const invalidate = useInvalidateLists();
+  return useMutation({
+    mutationFn: (listId: string) =>
+      api.post(`/household/lists/${listId}/clear-done`),
+    onSuccess: invalidate,
+  });
+}
+
+// ---- Household: meals ----
+export function useMeals(weekStart?: string) {
+  return useQuery({
+    queryKey: ["meals", weekStart ?? "current"],
+    queryFn: () =>
+      api.get<{ meals: Meal[]; weekStart: string }>(
+        `/household/meals${qs({ from: weekStart })}`,
+      ),
+  });
+}
+
+function useInvalidateMeals() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: ["meals"] });
+}
+
+export function useCreateMeal() {
+  const invalidate = useInvalidateMeals();
+  return useMutation({
+    mutationFn: (body: {
+      date: string;
+      slot: string;
+      title: string;
+      notes?: string | null;
+    }) => api.post<{ meal: Meal }>("/household/meals", body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateMeal() {
+  const invalidate = useInvalidateMeals();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      api.patch<{ meal: Meal }>(`/household/meals/${id}`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteMeal() {
+  const invalidate = useInvalidateMeals();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/household/meals/${id}`),
     onSuccess: invalidate,
   });
 }

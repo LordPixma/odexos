@@ -43,6 +43,13 @@
       "when": 1789123818388,
       "tag": "0005_activity_recurrence",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789124075355,
+      "tag": "0006_household",
+      "breakpoints": true
     }
   ]
 }

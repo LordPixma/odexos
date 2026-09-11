@@ -279,6 +279,60 @@ export interface DashboardData {
   recentTransactions: Transaction[]; // latest synced bank activity
 }
 
+// ---- Shared lists & meal planning ----
+
+export const LIST_TYPES = ["shopping", "todo", "chores", "custom"] as const;
+export type ListType = (typeof LIST_TYPES)[number];
+
+export const LIST_TYPE_LABELS: Record<ListType, string> = {
+  shopping: "Shopping",
+  todo: "To-do",
+  chores: "Chores",
+  custom: "List",
+};
+
+export interface ListItem {
+  id: string;
+  listId: string;
+  text: string;
+  done: boolean;
+  assignedTo: string | null;
+  position: number;
+  createdAt: string;
+}
+
+export interface List {
+  id: string;
+  familyId: string;
+  name: string;
+  type: ListType;
+  createdAt: string;
+}
+
+export interface ListWithItems extends List {
+  items: ListItem[];
+}
+
+export const MEAL_SLOTS = ["breakfast", "lunch", "dinner", "snack"] as const;
+export type MealSlot = (typeof MEAL_SLOTS)[number];
+
+export const MEAL_SLOT_LABELS: Record<MealSlot, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snack",
+};
+
+export interface Meal {
+  id: string;
+  familyId: string;
+  date: string; // YYYY-MM-DD
+  slot: MealSlot;
+  title: string;
+  notes: string | null;
+  createdAt: string;
+}
+
 export interface ApiError {
   error: string;
 }
