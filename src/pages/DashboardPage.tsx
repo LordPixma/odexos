@@ -5,6 +5,7 @@ import { Avatar, Card, EmptyState, PageLoader, SectionTitle } from "../component
 import { ClockIcon, MapPinIcon } from "../components/icons";
 import { ACTIVITY_COLORS, EXPENSE_COLORS } from "../lib/labels";
 import {
+  formatDate,
   formatFullDate,
   formatMoney,
   formatTime,
@@ -120,7 +121,7 @@ export default function DashboardPage() {
           sub={
             data.expenseByCategory[0]
               ? `Top: ${EXPENSE_CATEGORY_LABELS[data.expenseByCategory[0].category]}`
-              : "No expenses yet"
+              : "Nothing spent yet"
           }
           accent="#b45309"
         />
@@ -268,7 +269,14 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="p-5">
-            <SectionTitle title="This month's spend" subtitle="By category" />
+            <SectionTitle
+              title="This month's spend"
+              subtitle={
+                data.recentTransactions.length > 0
+                  ? "Expenses + bank spend"
+                  : "By category"
+              }
+            />
             {data.expenseByCategory.length === 0 ? (
               <EmptyState icon="💷" title="No spending logged" />
             ) : (
@@ -297,6 +305,51 @@ export default function DashboardPage() {
               </div>
             )}
           </Card>
+
+          {data.recentTransactions.length > 0 && (
+            <Card className="p-5">
+              <SectionTitle
+                title="Recent activity"
+                subtitle={
+                  data.monthIncomeCents > 0
+                    ? `${formatMoney(data.monthIncomeCents, data.currency)} in this month`
+                    : "From your banks"
+                }
+                action={
+                  <Link to="/transactions" className="text-sm font-medium text-brand-600 hover:underline">
+                    View all
+                  </Link>
+                }
+              />
+              <div className="divide-y divide-slate-100">
+                {data.recentTransactions.map((t) => {
+                  const credit = t.direction === "credit";
+                  return (
+                    <div
+                      key={t.id}
+                      className="flex items-center justify-between gap-3 py-2.5"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-slate-800">
+                          {t.merchant || t.description}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {formatDate(t.date)}
+                        </div>
+                      </div>
+                      <div
+                        className="shrink-0 text-sm font-semibold tabular-nums"
+                        style={{ color: credit ? "#0f766e" : "#0f172a" }}
+                      >
+                        {credit ? "+" : "−"}
+                        {formatMoney(Math.abs(t.amountCents), t.currency)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -1,18 +1,26 @@
 import { Hono } from "hono";
-import { and, asc, eq, gte, lte } from "drizzle-orm";
-import { activities, expenses, families, users } from "../db/schema";
-import { toActivity, toMember } from "../lib/serialize";
-import { buildBudgetsOverview, currentMonthKey } from "../lib/budgets";
+import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import {
+  accounts,
+  activities,
+  families,
+  transactions,
+  users,
+} from "../db/schema";
+import { toActivity, toMember, toTransaction } from "../lib/serialize";
+import {
+  buildBudgetsOverview,
+  computeSpendByCategory,
+  currentMonthKey,
+} from "../lib/budgets";
 import type { AppEnv } from "../lib/types";
 import {
   ACCOUNT_TYPES,
   LIABILITY_ACCOUNT_TYPES,
   type AccountType,
   type DashboardData,
-  type ExpenseCategory,
   type FinanceSummary,
 } from "@shared/types";
-import { accounts } from "../db/schema";
 
 const app = new Hono<AppEnv>();
 
@@ -63,25 +71,33 @@ app.get("/", async (c) => {
     .filter((a) => a.startsAt >= todayEnd.toISOString())
     .map(toActivity);
 
-  // Expenses: current month total + breakdown by category.
-  const monthStart = startOfMonthUTC(now);
-  const monthEnd = endOfMonthUTC(now);
-  const monthExpenses = await db.query.expenses.findMany({
-    where: and(
-      eq(expenses.familyId, familyId),
-      gte(expenses.spentAt, monthStart),
-      lte(expenses.spentAt, monthEnd),
-    ),
-  });
-  let monthSpendCents = 0;
-  const byCategory = new Map<ExpenseCategory, number>();
-  for (const e of monthExpenses) {
-    monthSpendCents += e.amountCents;
-    byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + e.amountCents);
-  }
-  const expenseByCategory = [...byCategory.entries()]
+  // Combined monthly spend (manual expenses + synced bank debits) by category.
+  const monthKey = currentMonthKey(now);
+  const spend = await computeSpendByCategory(db, familyId, monthKey);
+  const monthSpendCents = spend.totalCents;
+  const expenseByCategory = [...spend.byCategory.entries()]
     .map(([category, amountCents]) => ({ category, amountCents }))
     .sort((a, b) => b.amountCents - a.amountCents);
+
+  // Income + recent activity from synced transactions.
+  const monthStart = startOfMonthUTC(now);
+  const monthEnd = endOfMonthUTC(now);
+  const monthCredits = await db.query.transactions.findMany({
+    where: and(
+      eq(transactions.familyId, familyId),
+      eq(transactions.direction, "credit"),
+      gte(transactions.date, monthStart),
+      lte(transactions.date, monthEnd),
+    ),
+  });
+  const monthIncomeCents = monthCredits.reduce((s, t) => s + t.amountCents, 0);
+
+  const recentTxnRows = await db.query.transactions.findMany({
+    where: eq(transactions.familyId, familyId),
+    orderBy: [desc(transactions.date), desc(transactions.createdAt)],
+    limit: 5,
+  });
+  const recentTransactions = recentTxnRows.map(toTransaction);
 
   // Finance summary.
   const accountRows = await db.query.accounts.findMany({
@@ -108,11 +124,7 @@ app.get("/", async (c) => {
       .map(([type, balanceCents]) => ({ type, balanceCents })),
   };
 
-  const budgetOverview = await buildBudgetsOverview(
-    db,
-    familyId,
-    currentMonthKey(now),
-  );
+  const budgetOverview = await buildBudgetsOverview(db, familyId, monthKey);
 
   const data: DashboardData = {
     family: { id: familyId, name: fam?.name ?? "" },
@@ -120,10 +132,12 @@ app.get("/", async (c) => {
     todayActivities,
     upcomingActivities,
     monthSpendCents,
+    monthIncomeCents,
     currency,
     expenseByCategory,
     finance,
     budgetAlerts: budgetOverview.alerts,
+    recentTransactions,
   };
   return c.json(data);
 });
