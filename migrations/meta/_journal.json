@@ -57,6 +57,13 @@
       "when": 1789124461258,
       "tag": "0007_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789125297545,
+      "tag": "0008_weekly_digest",
+      "breakpoints": true
     }
   ]
 }

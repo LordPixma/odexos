@@ -5,6 +5,9 @@ import type { AppEnv, Bindings } from "./lib/types";
 import { createDb } from "./db/client";
 import { syncConnection } from "./lib/bank";
 import { checkBudgetAlerts } from "./lib/notifications";
+import { sendDigest } from "./lib/digest";
+
+const WEEKLY_DIGEST_CRON = "0 7 * * 1"; // Monday 07:00 UTC
 import authRoutes from "./routes/auth";
 import memberRoutes from "./routes/members";
 import activityRoutes from "./routes/activities";
@@ -55,13 +58,26 @@ app.onError((err, c) => {
   return c.json({ error: "Something went wrong" }, 500);
 });
 
-// Cron Trigger: refresh linked balances, then raise budget alerts.
+// Cron Triggers: 6-hourly (bank sync + budget alerts) and weekly (digest).
 async function scheduled(
-  _controller: ScheduledController,
+  controller: ScheduledController,
   env: Bindings,
   _ctx: ExecutionContext,
 ): Promise<void> {
   const db = createDb(env.DB);
+
+  // Weekly family digest (Monday morning).
+  if (controller.cron === WEEKLY_DIGEST_CRON) {
+    const digestFamilies = await db.query.families.findMany();
+    for (const fam of digestFamilies) {
+      try {
+        await sendDigest(db, env, fam.id, false);
+      } catch (err) {
+        console.error(`Weekly digest failed for ${fam.id}:`, err);
+      }
+    }
+    return;
+  }
 
   const connections = await db.query.bankConnections.findMany();
   for (const connection of connections) {

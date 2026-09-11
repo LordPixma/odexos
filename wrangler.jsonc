@@ -27,9 +27,9 @@
       "migrations_dir": "migrations"
     }
   ],
-  // Refresh linked bank balances every 6 hours.
+  // Refresh linked bank balances every 6 hours; send the family digest Monday 07:00 UTC.
   "triggers": {
-    "crons": ["0 */6 * * *"]
+    "crons": ["0 */6 * * *", "0 7 * * 1"]
   },
   "vars": {
     "APP_NAME": "OdexOS",

@@ -4,6 +4,7 @@ import {
   useFamilySettings,
   useMarkNotificationsRead,
   useNotifications,
+  useSendDigest,
   useUpdateFamilySettings,
 } from "../lib/queries";
 import { Modal } from "./ui";
@@ -21,6 +22,7 @@ export default function NotificationsBell({
   const check = useCheckAlerts();
   const { data: settings } = useFamilySettings();
   const updateSettings = useUpdateFamilySettings();
+  const sendDigest = useSendDigest();
 
   const notifications = data?.notifications ?? [];
   const unread = data?.unread ?? 0;
@@ -106,17 +108,45 @@ export default function NotificationsBell({
             </div>
           )}
 
-          <label className="flex items-center gap-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
-            <input
-              type="checkbox"
-              checked={settings?.alertEmails ?? true}
-              onChange={(e) =>
-                updateSettings.mutate({ alertEmails: e.target.checked })
-              }
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-            />
-            Email the family when a budget is breached
-          </label>
+          <div className="space-y-3 border-t border-slate-100 pt-4">
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={settings?.alertEmails ?? true}
+                onChange={(e) =>
+                  updateSettings.mutate({ alertEmails: e.target.checked })
+                }
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+              Email the family when a budget is breached
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={settings?.weeklyDigest ?? true}
+                onChange={(e) =>
+                  updateSettings.mutate({ weeklyDigest: e.target.checked })
+                }
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+              Send a weekly family digest (Monday mornings)
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => sendDigest.mutate()}
+                disabled={sendDigest.isPending}
+                className="text-sm font-medium text-brand-600 hover:underline disabled:opacity-50"
+              >
+                Send this week's digest now
+              </button>
+              {sendDigest.isSuccess && (
+                <span className="text-xs text-emerald-600">
+                  Sent to {sendDigest.data.sent} member
+                  {sendDigest.data.sent === 1 ? "" : "s"}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </Modal>
     </>

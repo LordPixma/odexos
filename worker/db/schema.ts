@@ -15,6 +15,10 @@ export const families = sqliteTable("families", {
   alertEmails: integer("alert_emails", { mode: "boolean" })
     .notNull()
     .default(true),
+  weeklyDigest: integer("weekly_digest", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  lastDigestWeek: text("last_digest_week"), // Monday (YYYY-MM-DD) of last send
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 

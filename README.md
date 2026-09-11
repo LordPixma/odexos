@@ -20,6 +20,7 @@ This repository is the foundation: a working, deployable full-stack app running
 | 🗓️ **Activities** | School runs, clubs, meetings, weekend plans, appointments and chores — assign to a family member, set times/locations, grouped by day. **Recurring** (daily / weekdays / weekly / monthly, with an optional end date). |
 | 🧺 **Household** | Family-shared **lists** (shopping / to-do / chores) with checkable, assignable items, plus a weekly **meal planner**. |
 | 🔔 **Alerts** | In-app **notifications** (with an unread badge) when a budget crosses a threshold, plus **email** delivery via Resend (falls back to logging when unconfigured). Deduped so the same alert isn't repeated. |
+| 📬 **Weekly digest** | A Monday-morning email summarising the week ahead (activities), the meal plan, month spend vs budgets, and open list items. Per-family toggle + "send now"; a second Cron Trigger delivers it (idempotent per week). |
 | 💷 **Expenses** | Log family spending by category and payer, filter by month, see monthly totals and category breakdowns. |
 | 📊 **Finance** | Track current accounts, savings, cards, investments and pensions. Automatic **net-worth** (assets − liabilities). **Connect real banks via Open Banking (TrueLayer)** to sync balances automatically. |
 | 🧾 **Transactions** | Bank transactions synced from linked accounts, **auto-categorised**, with monthly spending insights (by category + top merchants). Re-categorise any transaction; overrides stick. Define **custom category rules** (merchant → category) that beat the built-in categoriser and re-apply to existing transactions. |
@@ -221,8 +222,9 @@ email alerts, shared lists, and meal planning. Natural next steps:
 
 - **Web/native push** — real push notifications (VAPID + service worker) on top
   of the existing in-app notifications.
-- **Weekly family digest** — a scheduled summary email of the week ahead + spend.
 - **Calendar sync** — two-way Google Calendar / iCal for activities.
+- **Budgets on the digest** — richer per-category charts and month-over-month
+  trends.
 - **Calendar sync** — two-way sync with Google Calendar / iCal feeds.
 - **Budgets & alerts** — monthly budgets per category with nudges when close.
 - **Shared lists & meal planning** — weekend plans, shopping, chores.

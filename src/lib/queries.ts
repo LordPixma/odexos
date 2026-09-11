@@ -542,3 +542,9 @@ export function useUpdateFamilySettings() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["family-settings"] }),
   });
 }
+
+export function useSendDigest() {
+  return useMutation({
+    mutationFn: () => api.post<{ sent: number }>("/family/digest/send"),
+  });
+}
