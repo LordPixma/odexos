@@ -236,11 +236,13 @@ export interface DashboardData {
   members: Member[];
   todayActivities: Activity[];
   upcomingActivities: Activity[];
-  monthSpendCents: number;
+  monthSpendCents: number; // combined: manual expenses + synced bank debits
+  monthIncomeCents: number; // synced bank credits this month
   currency: string;
   expenseByCategory: { category: ExpenseCategory; amountCents: number }[];
   finance: FinanceSummary;
   budgetAlerts: BudgetProgress[]; // budgets at warning/over this month
+  recentTransactions: Transaction[]; // latest synced bank activity
 }
 
 export interface ApiError {
