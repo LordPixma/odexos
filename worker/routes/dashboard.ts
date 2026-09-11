@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { activities, expenses, families, users } from "../db/schema";
 import { toActivity, toMember } from "../lib/serialize";
+import { buildBudgetsOverview, currentMonthKey } from "../lib/budgets";
 import type { AppEnv } from "../lib/types";
 import {
   ACCOUNT_TYPES,
@@ -107,6 +108,12 @@ app.get("/", async (c) => {
       .map(([type, balanceCents]) => ({ type, balanceCents })),
   };
 
+  const budgetOverview = await buildBudgetsOverview(
+    db,
+    familyId,
+    currentMonthKey(now),
+  );
+
   const data: DashboardData = {
     family: { id: familyId, name: fam?.name ?? "" },
     members: memberRows.map(toMember),
@@ -116,6 +123,7 @@ app.get("/", async (c) => {
     currency,
     expenseByCategory,
     finance,
+    budgetAlerts: budgetOverview.alerts,
   };
   return c.json(data);
 });

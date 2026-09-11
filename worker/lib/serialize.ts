@@ -2,6 +2,7 @@ import type {
   AccountRow,
   ActivityRow,
   BankConnectionRow,
+  BudgetRow,
   ExpenseRow,
   TransactionRow,
   UserRow,
@@ -10,6 +11,7 @@ import type {
   Account,
   Activity,
   BankConnection,
+  Budget,
   Expense,
   Member,
   Transaction,
@@ -93,6 +95,16 @@ export function toTransaction(row: TransactionRow): Transaction {
     date: row.date,
     bookedAt: row.bookedAt,
     createdAt: row.createdAt,
+  };
+}
+
+export function toBudget(row: BudgetRow): Budget {
+  return {
+    id: row.id,
+    category: row.category,
+    amountCents: row.amountCents,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }
 
