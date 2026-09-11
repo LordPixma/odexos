@@ -333,6 +333,33 @@ export interface Meal {
   createdAt: string;
 }
 
+// ---- Notifications & family settings ----
+
+export type NotificationType = "budget_warning" | "budget_over";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  category: string | null;
+  month: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  notifications: Notification[];
+  unread: number;
+}
+
+export interface FamilySettings {
+  id: string;
+  name: string;
+  currency: string;
+  alertEmails: boolean;
+}
+
 export interface ApiError {
   error: string;
 }

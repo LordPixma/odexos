@@ -4,6 +4,7 @@ import { withDb, requireAuth } from "./middleware";
 import type { AppEnv, Bindings } from "./lib/types";
 import { createDb } from "./db/client";
 import { syncConnection } from "./lib/bank";
+import { checkBudgetAlerts } from "./lib/notifications";
 import authRoutes from "./routes/auth";
 import memberRoutes from "./routes/members";
 import activityRoutes from "./routes/activities";
@@ -11,6 +12,8 @@ import expenseRoutes from "./routes/expenses";
 import financeRoutes, { bankCallback } from "./routes/finance";
 import dashboardRoutes from "./routes/dashboard";
 import householdRoutes from "./routes/household";
+import notificationRoutes from "./routes/notifications";
+import familyRoutes from "./routes/family";
 
 const app = new Hono<AppEnv>();
 
@@ -33,6 +36,8 @@ app.route("/api/activities", activityRoutes);
 app.route("/api/expenses", expenseRoutes);
 app.route("/api/finance", financeRoutes);
 app.route("/api/household", householdRoutes);
+app.route("/api/notifications", notificationRoutes);
+app.route("/api/family", familyRoutes);
 app.route("/api/dashboard", dashboardRoutes);
 
 // Unknown API routes → JSON 404 (never fall through to the SPA).
@@ -50,19 +55,29 @@ app.onError((err, c) => {
   return c.json({ error: "Something went wrong" }, 500);
 });
 
-// Cron Trigger: refresh every linked connection's balances on a schedule.
+// Cron Trigger: refresh linked balances, then raise budget alerts.
 async function scheduled(
   _controller: ScheduledController,
   env: Bindings,
   _ctx: ExecutionContext,
 ): Promise<void> {
   const db = createDb(env.DB);
+
   const connections = await db.query.bankConnections.findMany();
   for (const connection of connections) {
     try {
       await syncConnection(db, env, connection);
     } catch (err) {
       console.error(`Scheduled sync failed for ${connection.id}:`, err);
+    }
+  }
+
+  const allFamilies = await db.query.families.findMany();
+  for (const fam of allFamilies) {
+    try {
+      await checkBudgetAlerts(db, env, fam.id);
+    } catch (err) {
+      console.error(`Budget alert check failed for ${fam.id}:`, err);
     }
   }
 }

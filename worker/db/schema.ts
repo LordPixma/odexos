@@ -12,6 +12,9 @@ export const families = sqliteTable("families", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   currency: text("currency").notNull().default("GBP"),
+  alertEmails: integer("alert_emails", { mode: "boolean" })
+    .notNull()
+    .default(true),
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 
@@ -418,6 +421,33 @@ export const meals = sqliteTable(
   }),
 );
 
+// In-app notifications (budget alerts, …). `dedupe_key` is unique per family
+// so the same alert isn't created twice.
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    type: text("type", { enum: ["budget_warning", "budget_over"] }).notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    category: text("category"),
+    month: text("month"), // YYYY-MM
+    dedupeKey: text("dedupe_key").notNull(),
+    readAt: text("read_at"),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    familyIdx: index("notifications_family_idx").on(t.familyId),
+    dedupeUnique: uniqueIndex("notifications_family_dedupe_unique").on(
+      t.familyId,
+      t.dedupeKey,
+    ),
+  }),
+);
+
 export type FamilyRow = typeof families.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
@@ -431,3 +461,4 @@ export type CategoryRuleRow = typeof categoryRules.$inferSelect;
 export type ListRow = typeof lists.$inferSelect;
 export type ListItemRow = typeof listItems.$inferSelect;
 export type MealRow = typeof meals.$inferSelect;
+export type NotificationRow = typeof notifications.$inferSelect;

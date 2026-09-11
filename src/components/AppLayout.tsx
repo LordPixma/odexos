@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth, useLogout } from "../lib/auth";
 import { Avatar } from "./ui";
+import NotificationsBell from "./NotificationsBell";
 import {
   CalendarIcon,
   ChartIcon,
@@ -102,9 +103,12 @@ export default function AppLayout() {
                 </div>
               </div>
             </div>
+            <div className="mt-2">
+              <NotificationsBell />
+            </div>
             <button
               onClick={() => logout.mutate()}
-              className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
             >
               <LogoutIcon /> Sign out
             </button>
@@ -117,12 +121,15 @@ export default function AppLayout() {
         <div className="flex items-center justify-between px-4 py-3">
           <Logo />
           {auth && (
-            <button
-              onClick={() => logout.mutate()}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
-            >
-              <LogoutIcon /> Sign out
-            </button>
+            <div className="flex items-center gap-1">
+              <NotificationsBell compact />
+              <button
+                onClick={() => logout.mutate()}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
+              >
+                <LogoutIcon /> Sign out
+              </button>
+            </div>
           )}
         </div>
         <div className="overflow-x-auto px-2 pb-2">

@@ -15,12 +15,14 @@ import type {
   DashboardData,
   Expense,
   FinanceSummary,
+  FamilySettings,
   LinkStartResponse,
   List,
   ListItem,
   ListWithItems,
   Meal,
   Member,
+  NotificationsResponse,
   SpendingInsights,
   SyncResult,
   Transaction,
@@ -496,5 +498,47 @@ export function useDeleteMeal() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/household/meals/${id}`),
     onSuccess: invalidate,
+  });
+}
+
+// ---- Notifications ----
+export function useNotifications() {
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => api.get<NotificationsResponse>("/notifications"),
+    refetchInterval: 120_000,
+  });
+}
+
+export function useMarkNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post("/notifications/read"),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+
+export function useCheckAlerts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<{ created: number }>("/notifications/check"),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+
+// ---- Family settings ----
+export function useFamilySettings() {
+  return useQuery({
+    queryKey: ["family-settings"],
+    queryFn: () => api.get<FamilySettings>("/family"),
+  });
+}
+
+export function useUpdateFamilySettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<FamilySettings>) =>
+      api.patch<FamilySettings>("/family", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["family-settings"] }),
   });
 }

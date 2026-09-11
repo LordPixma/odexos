@@ -8,6 +8,7 @@ import type {
   ListItemRow,
   ListRow,
   MealRow,
+  NotificationRow,
   TransactionRow,
   UserRow,
 } from "../db/schema";
@@ -22,6 +23,7 @@ import type {
   ListItem,
   Meal,
   Member,
+  Notification,
   Transaction,
 } from "@shared/types";
 
@@ -105,6 +107,19 @@ export function toTransaction(row: TransactionRow): Transaction {
     rawCategory: row.rawCategory,
     date: row.date,
     bookedAt: row.bookedAt,
+    createdAt: row.createdAt,
+  };
+}
+
+export function toNotification(row: NotificationRow): Notification {
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    category: row.category,
+    month: row.month,
+    readAt: row.readAt,
     createdAt: row.createdAt,
   };
 }
