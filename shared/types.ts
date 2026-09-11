@@ -4,6 +4,8 @@
 
 export type Role = "owner" | "adult" | "child" | "member";
 
+export type MemberStatus = "active" | "invited";
+
 export interface Member {
   id: string;
   familyId: string;
@@ -11,7 +13,17 @@ export interface Member {
   email: string;
   role: Role;
   color: string;
+  status: MemberStatus; // "invited" until an emailed invite is accepted
+  invitedAt: string | null;
   createdAt: string;
+}
+
+/** Public details shown on the accept-invite page (no session required). */
+export interface InvitePreview {
+  name: string;
+  email: string;
+  familyName: string;
+  role: Role;
 }
 
 export interface AuthState {

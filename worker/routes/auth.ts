@@ -62,6 +62,11 @@ auth.post("/register", async (c) => {
     passwordHash: "",
     role: "owner",
     color: DEFAULT_COLORS[0],
+    status: "active",
+    inviteTokenHash: null,
+    inviteExpiresAt: null,
+    invitedBy: null,
+    invitedAt: null,
     createdAt: new Date().toISOString(),
   });
   return c.json<AuthState>({ member, family }, 201);
@@ -74,6 +79,15 @@ auth.post("/login", async (c) => {
   const password = requireString(body.password, "Password", { max: 200 });
 
   const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+  if (user && user.status === "invited") {
+    return c.json(
+      {
+        error:
+          "This invite hasn't been accepted yet — check your email for the invite link to set a password.",
+      },
+      403,
+    );
+  }
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return c.json({ error: "Incorrect email or password" }, 401);
   }

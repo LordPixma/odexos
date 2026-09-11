@@ -34,7 +34,7 @@ function StatCard({
       <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
         {label}
       </div>
-      <div className="mt-2 text-2xl font-extrabold text-slate-900" style={{ color: accent }}>
+      <div className="mt-2 font-display text-2xl font-bold text-slate-900" style={{ color: accent }}>
         {value}
       </div>
       {sub && <div className="mt-1 text-xs text-slate-500">{sub}</div>}

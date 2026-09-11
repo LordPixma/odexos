@@ -16,6 +16,7 @@ import type {
   Expense,
   FinanceSummary,
   FamilySettings,
+  InvitePreview,
   LinkStartResponse,
   List,
   ListItem,
@@ -67,12 +68,38 @@ export function useMembers() {
   });
 }
 
+interface InviteResult {
+  member: Member;
+  emailSent: boolean;
+  emailProvider: string;
+}
+
 export function useCreateMember() {
   const invalidate = useInvalidateAll();
   return useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api.post<{ member: Member }>("/members", body),
+      api.post<InviteResult>("/members", body),
     onSuccess: invalidate,
+  });
+}
+
+export function useResendInvite() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<{ emailSent: boolean; emailProvider: string }>(
+        `/members/${id}/resend`,
+      ),
+    onSuccess: invalidate,
+  });
+}
+
+/** Public: fetch the details behind an invite token (for the accept page). */
+export function useInvitePreview(token: string) {
+  return useQuery({
+    queryKey: ["invite", token],
+    queryFn: () => api.get<InvitePreview>(`/invites/${token}`),
+    retry: false,
   });
 }
 

@@ -36,14 +36,14 @@ const NAV: NavItem[] = [
 function Logo() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-lg font-extrabold text-white">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 font-display text-lg font-bold text-white shadow-sm">
         O
       </span>
       <div className="leading-tight">
-        <div className="text-base font-extrabold tracking-tight text-slate-900">
+        <div className="font-display text-base font-bold tracking-tight text-slate-900">
           OdexOS
         </div>
-        <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600/80">
           Family HQ
         </div>
       </div>
@@ -61,15 +61,27 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           end={end}
           onClick={onNavigate}
           className={({ isActive }) =>
-            `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+            `group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${
               isActive
-                ? "bg-brand-50 text-brand-700"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                ? "bg-brand-600/10 text-brand-800"
+                : "text-slate-500 hover:bg-black/[0.04] hover:text-slate-900"
             }`
           }
         >
-          <Icon size={19} />
-          <span>{label}</span>
+          {({ isActive }) => (
+            <>
+              <span
+                className={`absolute left-0 top-1/2 hidden h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand-600 transition-opacity lg:block ${
+                  isActive ? "opacity-100" : "opacity-0"
+                }`}
+              />
+              <Icon
+                size={19}
+                className={isActive ? "text-brand-600" : "text-slate-400 group-hover:text-slate-600"}
+              />
+              <span>{label}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>
@@ -83,7 +95,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-full lg:flex">
       {/* Sidebar (desktop) */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white p-4 lg:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-black/5 bg-white/70 p-4 backdrop-blur-xl lg:flex">
         <div className="px-2 py-2">
           <Logo />
         </div>
@@ -91,7 +103,7 @@ export default function AppLayout() {
           <NavLinks />
         </div>
         {auth && (
-          <div className="mt-4 border-t border-slate-100 pt-4">
+          <div className="mt-4 border-t border-black/5 pt-4">
             <div className="flex items-center gap-3 px-2">
               <Avatar name={auth.member.name} color={auth.member.color} />
               <div className="min-w-0 flex-1 leading-tight">
@@ -108,7 +120,7 @@ export default function AppLayout() {
             </div>
             <button
               onClick={() => logout.mutate()}
-              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 hover:bg-black/[0.04] hover:text-slate-800"
             >
               <LogoutIcon /> Sign out
             </button>
@@ -117,7 +129,7 @@ export default function AppLayout() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-20 border-b border-black/5 bg-white/70 backdrop-blur-xl lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <Logo />
           {auth && (
@@ -125,7 +137,7 @@ export default function AppLayout() {
               <NotificationsBell compact />
               <button
                 onClick={() => logout.mutate()}
-                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 hover:bg-black/[0.04]"
               >
                 <LogoutIcon /> Sign out
               </button>

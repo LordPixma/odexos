@@ -64,6 +64,13 @@
       "when": 1789125297545,
       "tag": "0008_weekly_digest",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789131687547,
+      "tag": "0009_member_invites",
+      "breakpoints": true
     }
   ]
 }

@@ -71,6 +71,15 @@ export function useRegister() {
   });
 }
 
+export function useAcceptInvite(token: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { password: string }) =>
+      api.post<AuthState>(`/invites/${token}/accept`, body),
+    onSuccess: (data) => qc.setQueryData(["me"], data),
+  });
+}
+
 export function useLogout() {
   const qc = useQueryClient();
   return useMutation({
