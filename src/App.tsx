@@ -11,6 +11,7 @@ import TransactionsPage from "./pages/TransactionsPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import FinancePage from "./pages/FinancePage";
 import MembersPage from "./pages/MembersPage";
+import AcceptInvitePage from "./pages/AcceptInvitePage";
 
 export default function App() {
   const { auth, isLoading } = useAuth();
@@ -23,21 +24,25 @@ export default function App() {
     );
   }
 
-  if (!auth) return <AuthPage />;
-
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="activities" element={<ActivitiesPage />} />
-        <Route path="household" element={<HouseholdPage />} />
-        <Route path="expenses" element={<ExpensesPage />} />
-        <Route path="transactions" element={<TransactionsPage />} />
-        <Route path="budgets" element={<BudgetsPage />} />
-        <Route path="finance" element={<FinancePage />} />
-        <Route path="family" element={<MembersPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
+      {/* Accepting an invite works whether or not there's a session. */}
+      <Route path="/invite/:token" element={<AcceptInvitePage />} />
+      {auth ? (
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="activities" element={<ActivitiesPage />} />
+          <Route path="household" element={<HouseholdPage />} />
+          <Route path="expenses" element={<ExpensesPage />} />
+          <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="budgets" element={<BudgetsPage />} />
+          <Route path="finance" element={<FinancePage />} />
+          <Route path="family" element={<MembersPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      ) : (
+        <Route path="*" element={<AuthPage />} />
+      )}
     </Routes>
   );
 }

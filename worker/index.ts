@@ -9,6 +9,7 @@ import { sendDigest } from "./lib/digest";
 
 const WEEKLY_DIGEST_CRON = "0 7 * * 1"; // Monday 07:00 UTC
 import authRoutes from "./routes/auth";
+import inviteRoutes from "./routes/invites";
 import memberRoutes from "./routes/members";
 import activityRoutes from "./routes/activities";
 import expenseRoutes from "./routes/expenses";
@@ -31,6 +32,10 @@ app.route("/api/auth", authRoutes);
 // Public bank OAuth callback — secured by its one-time `state`, so it must sit
 // BEFORE the auth gate (the browser arrives here redirected from the provider).
 app.get("/api/finance/connections/callback", bankCallback);
+
+// Public invite endpoints — secured by the one-time invite token, so they sit
+// BEFORE the auth gate (the invitee has no session yet).
+app.route("/api/invites", inviteRoutes);
 
 // Everything below this line requires a valid session.
 app.use("/api/*", requireAuth);

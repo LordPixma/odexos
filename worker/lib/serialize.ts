@@ -35,6 +35,8 @@ export function toMember(row: UserRow): Member {
     email: row.email,
     role: row.role,
     color: row.color,
+    status: row.status,
+    invitedAt: row.invitedAt,
     createdAt: row.createdAt,
   };
 }

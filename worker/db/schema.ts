@@ -32,15 +32,26 @@ export const users = sqliteTable(
       .references(() => families.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
+    // Empty for a member who was invited but hasn't accepted yet.
     passwordHash: text("password_hash").notNull(),
     role: text("role", { enum: ["owner", "adult", "child", "member"] })
       .notNull()
       .default("member"),
     color: text("color").notNull().default("#6366f1"),
+    // "active" once the member has a password; "invited" while an emailed
+    // invite is outstanding (they can't sign in until they accept it).
+    status: text("status", { enum: ["active", "invited"] })
+      .notNull()
+      .default("active"),
+    inviteTokenHash: text("invite_token_hash"), // SHA-256 of the invite token
+    inviteExpiresAt: text("invite_expires_at"), // ISO 8601
+    invitedBy: text("invited_by"), // user id of the inviter (no FK: informational)
+    invitedAt: text("invited_at"), // ISO 8601
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({
     familyIdx: index("users_family_idx").on(t.familyId),
+    inviteTokenIdx: index("users_invite_token_idx").on(t.inviteTokenHash),
   }),
 );
 

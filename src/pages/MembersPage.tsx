@@ -3,6 +3,7 @@ import {
   useCreateMember,
   useDeleteMember,
   useMembers,
+  useResendInvite,
   useUpdateMember,
 } from "../lib/queries";
 import { useAuth } from "../lib/auth";
@@ -39,10 +40,11 @@ const SWATCHES = [
   "#14b8a6",
 ];
 
+const PENDING_COLOR = "#e0930f";
+
 interface FormState {
   name: string;
   email: string;
-  password: string;
   role: Role;
   color: string;
 }
@@ -51,7 +53,6 @@ function emptyForm(): FormState {
   return {
     name: "",
     email: "",
-    password: "",
     role: "adult",
     color: SWATCHES[0],
   };
@@ -66,10 +67,12 @@ export default function MembersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const create = useCreateMember();
   const update = useUpdateMember();
   const remove = useDeleteMember();
+  const resend = useResendInvite();
   const error =
     (create.error as ApiError | null)?.message ??
     (update.error as ApiError | null)?.message;
@@ -83,38 +86,45 @@ export default function MembersPage() {
   }
   function openEdit(m: Member) {
     setEditing(m);
-    setForm({
-      name: m.name,
-      email: m.email,
-      password: "",
-      role: m.role,
-      color: m.color,
-    });
+    setForm({ name: m.name, email: m.email, role: m.role, color: m.color });
     create.reset();
     update.reset();
     setModalOpen(true);
   }
 
+  function inviteNotice(name: string, emailSent: boolean, verb = "sent") {
+    setNotice(
+      emailSent
+        ? `Invite ${verb} to ${name}. They'll get an email with a link to set their password.`
+        : `${name}'s invite was created, but the email couldn't be sent right now. Use “Resend” to try again.`,
+    );
+  }
+
   function submit(e: FormEvent) {
     e.preventDefault();
-    const onDone = { onSuccess: () => setModalOpen(false) };
     if (editing) {
       update.mutate(
         { id: editing.id, name: form.name, color: form.color, role: form.role },
-        onDone,
+        { onSuccess: () => setModalOpen(false) },
       );
     } else {
       create.mutate(
+        { name: form.name, email: form.email, role: form.role, color: form.color },
         {
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          role: form.role,
-          color: form.color,
+          onSuccess: (res) => {
+            setModalOpen(false);
+            inviteNotice(form.name, res.emailSent);
+          },
         },
-        onDone,
       );
     }
+  }
+
+  function doResend(m: Member) {
+    setNotice(null);
+    resend.mutate(m.id, {
+      onSuccess: (res) => inviteNotice(m.name, res.emailSent, "resent"),
+    });
   }
 
   return (
@@ -130,10 +140,23 @@ export default function MembersPage() {
         </div>
         {canManage && (
           <Button onClick={openCreate}>
-            <PlusIcon /> Add member
+            <PlusIcon /> Invite member
           </Button>
         )}
       </div>
+
+      {notice && (
+        <div className="flex items-start justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          <span>{notice}</span>
+          <button
+            onClick={() => setNotice(null)}
+            className="shrink-0 text-brand-600 hover:text-brand-800"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {isLoading || !members ? (
         <PageLoader />
@@ -141,6 +164,7 @@ export default function MembersPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {members.map((m) => {
             const isSelf = m.id === auth?.member.id;
+            const isPending = m.status === "invited";
             const canEdit = canManage || isSelf;
             return (
               <Card key={m.id} className="flex items-center gap-4 p-5">
@@ -155,14 +179,36 @@ export default function MembersPage() {
                     )}
                   </div>
                   <div className="truncate text-sm text-slate-500">{m.email}</div>
-                  <span
-                    className="chip mt-1"
-                    style={{ backgroundColor: `${m.color}1a`, color: m.color }}
-                  >
-                    {ROLE_LABELS[m.role]}
-                  </span>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span
+                      className="chip"
+                      style={{ backgroundColor: `${m.color}1a`, color: m.color }}
+                    >
+                      {ROLE_LABELS[m.role]}
+                    </span>
+                    {isPending && (
+                      <span
+                        className="chip"
+                        style={{
+                          backgroundColor: `${PENDING_COLOR}1a`,
+                          color: PENDING_COLOR,
+                        }}
+                      >
+                        Pending invite
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
+                  {isPending && canManage && (
+                    <button
+                      onClick={() => doResend(m)}
+                      disabled={resend.isPending}
+                      className="rounded-md px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50 disabled:opacity-50"
+                    >
+                      Resend
+                    </button>
+                  )}
                   {canEdit && (
                     <button
                       onClick={() => openEdit(m)}
@@ -172,18 +218,32 @@ export default function MembersPage() {
                       <EditIcon />
                     </button>
                   )}
-                  {isOwner && !isSelf && (
-                    <button
-                      onClick={() => {
-                        if (confirm(`Remove ${m.name} from the family?`))
-                          remove.mutate(m.id);
-                      }}
-                      className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                      aria-label="Remove"
-                    >
-                      <TrashIcon />
-                    </button>
-                  )}
+                  {isPending
+                    ? canManage && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Revoke the invite for ${m.name}?`))
+                              remove.mutate(m.id);
+                          }}
+                          className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          aria-label="Revoke invite"
+                        >
+                          <TrashIcon />
+                        </button>
+                      )
+                    : isOwner &&
+                      !isSelf && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Remove ${m.name} from the family?`))
+                              remove.mutate(m.id);
+                          }}
+                          className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          aria-label="Remove"
+                        >
+                          <TrashIcon />
+                        </button>
+                      )}
                 </div>
               </Card>
             );
@@ -194,7 +254,7 @@ export default function MembersPage() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? "Edit member" : "Add family member"}
+        title={editing ? "Edit member" : "Invite family member"}
       >
         <form onSubmit={submit} className="space-y-4">
           <Field label="Name">
@@ -206,26 +266,18 @@ export default function MembersPage() {
             />
           </Field>
           {!editing && (
-            <>
-              <Field label="Email">
-                <Input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="jane@example.com"
-                  required
-                />
-              </Field>
-              <Field label="Temporary password" hint="At least 8 characters — they can change it later.">
-                <Input
-                  type="text"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  minLength={8}
-                  required
-                />
-              </Field>
-            </>
+            <Field
+              label="Email"
+              hint="We'll email them a link to set their own password and join."
+            >
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="jane@example.com"
+                required
+              />
+            </Field>
           )}
           <div className="grid grid-cols-2 gap-4">
             <Field label="Role">
@@ -269,7 +321,11 @@ export default function MembersPage() {
               Cancel
             </Button>
             <Button type="submit" disabled={create.isPending || update.isPending}>
-              {editing ? "Save changes" : "Add member"}
+              {editing
+                ? "Save changes"
+                : create.isPending
+                  ? "Sending…"
+                  : "Send invite"}
             </Button>
           </div>
         </form>

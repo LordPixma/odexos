@@ -80,6 +80,18 @@ export function generateId(): string {
   return crypto.randomUUID();
 }
 
+/**
+ * SHA-256 of a string, hex-encoded. Used to store invite tokens at rest — we
+ * keep only the hash, so a database leak can't be used to accept invites.
+ */
+export async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return toHex(digest);
+}
+
 // --- Symmetric encryption for bank tokens at rest (AES-256-GCM) ---
 
 function toBase64(bytes: Uint8Array): string {
