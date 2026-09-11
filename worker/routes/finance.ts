@@ -1,14 +1,15 @@
 import { Hono, type Context } from "hono";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, type SQL } from "drizzle-orm";
 import {
   accounts,
   bankConnections,
   bankOauthStates,
   families,
+  transactions,
   users,
 } from "../db/schema";
 import { generateId, generateToken } from "../lib/crypto";
-import { toAccount, toBankConnection } from "../lib/serialize";
+import { toAccount, toBankConnection, toTransaction } from "../lib/serialize";
 import type { AppEnv } from "../lib/types";
 import {
   badRequest,
@@ -26,9 +27,12 @@ import {
 } from "../lib/bank";
 import {
   ACCOUNT_TYPES,
+  EXPENSE_CATEGORIES,
   LIABILITY_ACCOUNT_TYPES,
   type AccountType,
+  type ExpenseCategory,
   type FinanceSummary,
+  type SpendingInsights,
   type SyncResult,
 } from "@shared/types";
 
@@ -276,6 +280,7 @@ app.post("/connections/:id/sync", async (c) => {
       connections: 1,
       accountsUpdated: r.updated,
       accountsCreated: r.created,
+      transactionsAdded: r.transactionsAdded,
     });
   } catch (err) {
     return c.json(
@@ -294,12 +299,14 @@ app.post("/sync", async (c) => {
   });
   let updated = 0;
   let created = 0;
+  let txnsAdded = 0;
   let ok = 0;
   for (const conn of conns) {
     try {
       const r = await syncConnection(db, c.env, conn);
       updated += r.updated;
       created += r.created;
+      txnsAdded += r.transactionsAdded;
       ok++;
     } catch {
       /* status/lastError already recorded on the connection */
@@ -309,6 +316,7 @@ app.post("/sync", async (c) => {
     connections: ok,
     accountsUpdated: updated,
     accountsCreated: created,
+    transactionsAdded: txnsAdded,
   });
 });
 
@@ -328,6 +336,118 @@ app.delete("/connections/:id", async (c) => {
     .where(eq(accounts.connectionId, id));
   await db.delete(bankConnections).where(eq(bankConnections.id, id));
   return c.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
+// Transactions
+// ---------------------------------------------------------------------------
+
+// List transactions, filterable by month / category / account / direction.
+app.get("/transactions", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const { month, category, accountId, direction, limit } = c.req.query();
+
+  const conditions: SQL[] = [eq(transactions.familyId, familyId)];
+  if (month && /^\d{4}-\d{2}$/.test(month)) {
+    conditions.push(gte(transactions.date, `${month}-01`));
+    conditions.push(lte(transactions.date, `${month}-31`));
+  }
+  if (category)
+    conditions.push(
+      eq(transactions.category, requireEnum(category, EXPENSE_CATEGORIES, "category")),
+    );
+  if (accountId) conditions.push(eq(transactions.accountId, accountId));
+  if (direction === "debit" || direction === "credit")
+    conditions.push(eq(transactions.direction, direction));
+
+  const max = Math.min(Math.max(Number(limit) || 500, 1), 1000);
+  const rows = await db.query.transactions.findMany({
+    where: and(...conditions),
+    orderBy: [desc(transactions.date), desc(transactions.createdAt)],
+    limit: max,
+  });
+  return c.json({ transactions: rows.map(toTransaction) });
+});
+
+// Re-categorise a transaction (locks it against future auto-categorisation).
+app.patch("/transactions/:id", async (c) => {
+  const db = c.get("db");
+  const familyId = c.get("user").familyId;
+  const id = c.req.param("id");
+  const existing = await db.query.transactions.findFirst({
+    where: and(eq(transactions.id, id), eq(transactions.familyId, familyId)),
+  });
+  if (!existing) return c.json({ error: "Transaction not found" }, 404);
+
+  const body = await c.req.json().catch(() => ({}));
+  const category = requireEnum(body.category, EXPENSE_CATEGORIES, "Category");
+  await db
+    .update(transactions)
+    .set({ category, categoryLocked: true })
+    .where(eq(transactions.id, id));
+  const updated = await db.query.transactions.findFirst({
+    where: eq(transactions.id, id),
+  });
+  return c.json({ transaction: updated ? toTransaction(updated) : null });
+});
+
+// Spending insights for a month, derived from synced transactions.
+app.get("/insights", async (c) => {
+  const db = c.get("db");
+  const user = c.get("user");
+  const month = c.req.query("month");
+  const monthKey =
+    month && /^\d{4}-\d{2}$/.test(month)
+      ? month
+      : new Date().toISOString().slice(0, 7);
+
+  const fam = await db.query.families.findFirst({
+    where: eq(families.id, user.familyId),
+  });
+  const rows = await db.query.transactions.findMany({
+    where: and(
+      eq(transactions.familyId, user.familyId),
+      gte(transactions.date, `${monthKey}-01`),
+      lte(transactions.date, `${monthKey}-31`),
+    ),
+  });
+
+  let totalSpentCents = 0;
+  let totalIncomeCents = 0;
+  const byCategory = new Map<ExpenseCategory, number>();
+  const byMerchant = new Map<string, { amountCents: number; count: number }>();
+
+  for (const t of rows) {
+    if (t.direction === "credit") {
+      totalIncomeCents += t.amountCents;
+      continue;
+    }
+    const spent = Math.abs(t.amountCents);
+    totalSpentCents += spent;
+    byCategory.set(t.category, (byCategory.get(t.category) ?? 0) + spent);
+    const key = t.merchant || t.description;
+    const m = byMerchant.get(key) ?? { amountCents: 0, count: 0 };
+    m.amountCents += spent;
+    m.count += 1;
+    byMerchant.set(key, m);
+  }
+
+  const insights: SpendingInsights = {
+    month: monthKey,
+    currency: fam?.currency ?? "GBP",
+    totalSpentCents,
+    totalIncomeCents,
+    transactionCount: rows.length,
+    byCategory: [...byCategory.entries()]
+      .map(([category, amountCents]) => ({ category, amountCents }))
+      .sort((a, b) => b.amountCents - a.amountCents),
+    topMerchants: [...byMerchant.entries()]
+      .map(([merchant, v]) => ({ merchant, ...v }))
+      .sort((a, b) => b.amountCents - a.amountCents)
+      .slice(0, 6),
+  };
+  return c.json(insights);
 });
 
 // Public OAuth callback (secured by the one-time `state`, not the session).

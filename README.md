@@ -20,6 +20,7 @@ This repository is the foundation: a working, deployable full-stack app running
 | 🗓️ **Activities** | School runs, clubs, meetings, weekend plans, appointments and chores — assign to a family member, set times/locations, grouped by day. |
 | 💷 **Expenses** | Log family spending by category and payer, filter by month, see monthly totals and category breakdowns. |
 | 📊 **Finance** | Track current accounts, savings, cards, investments and pensions. Automatic **net-worth** (assets − liabilities). **Connect real banks via Open Banking (TrueLayer)** to sync balances automatically. |
+| 🧾 **Transactions** | Bank transactions synced from linked accounts, **auto-categorised**, with monthly spending insights (by category + top merchants). Re-categorise any transaction; overrides stick. |
 | 🏠 **Dashboard** | One glance: today's schedule, the week ahead, this month's spend by category, and the family's financial posture. |
 
 ---
@@ -168,8 +169,10 @@ all handled server-side in the Worker.
    exchanges the authorization code for tokens, **encrypts** them (AES-256-GCM)
    and stores them in D1, then does an initial sync.
 3. **Sync** — the Worker fetches each account/card balance and upserts it into the
-   `accounts` table (matched on `connection_id` + `external_ref`). A **Cron
-   Trigger** re-syncs every connection every 6 hours; access tokens are refreshed
+   `accounts` table (matched on `connection_id` + `external_ref`), then pulls
+   recent **transactions** into the `transactions` table (deduped per account by
+   the provider's transaction id) and auto-categorises them. A **Cron Trigger**
+   re-syncs every connection every 6 hours; access tokens are refreshed
    automatically.
 4. **Disconnect** — removes the connection and its tokens; synced accounts are
    kept as manual entries so history and net worth are preserved.
@@ -209,11 +212,15 @@ values — or leave them blank to use the mock provider.
 
 ## Roadmap
 
-The foundation now covers activities, expenses, finance **and bank sync**.
-Natural next steps:
+The foundation now covers activities, expenses, finance, bank sync **and
+transaction sync with auto-categorisation**. Natural next steps:
 
-- **Transactions & spending insights** — pull transactions from linked banks and
-  auto-categorise them alongside manual expenses.
+- **Budgets & alerts** — monthly budgets per category, drawing on synced
+  transactions, with nudges as you approach a limit.
+- **Fold transactions into the dashboard** — show recent bank activity and
+  combined (manual + synced) spend on the overview.
+- **Editable category rules** — let each family teach the auto-categoriser new
+  merchant → category mappings.
 - **Recurring activities** — repeat rules for the weekly school run, clubs, etc.
 - **Calendar sync** — two-way sync with Google Calendar / iCal feeds.
 - **Budgets & alerts** — monthly budgets per category with nudges when close.

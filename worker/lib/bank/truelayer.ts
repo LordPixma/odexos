@@ -1,5 +1,11 @@
-import type { AccountType } from "@shared/types";
-import type { BankProvider, ProviderAccount, ProviderTokens } from "./types";
+import type { AccountType, TransactionDirection } from "@shared/types";
+import type {
+  BankProvider,
+  ProviderAccount,
+  ProviderAccountKind,
+  ProviderTokens,
+  ProviderTransaction,
+} from "./types";
 
 interface TrueLayerConfig {
   clientId: string;
@@ -140,6 +146,7 @@ export class TrueLayerProvider implements BankProvider {
       const b = bal.results?.[0];
       out.push({
         externalId: a.account_id,
+        kind: "account",
         name: a.display_name || a.account_type || "Account",
         type: mapAccountType(a.account_type),
         institution: a.provider?.display_name ?? "Bank",
@@ -161,6 +168,7 @@ export class TrueLayerProvider implements BankProvider {
       const b = bal.results?.[0];
       out.push({
         externalId: c.account_id,
+        kind: "card",
         name: c.display_name || "Credit card",
         type: "credit",
         institution: c.provider?.display_name ?? "Bank",
@@ -171,5 +179,60 @@ export class TrueLayerProvider implements BankProvider {
     }
 
     return out;
+  }
+
+  async fetchTransactions(
+    accessToken: string,
+    account: { externalId: string; kind: ProviderAccountKind },
+    from: string,
+  ): Promise<ProviderTransaction[]> {
+    type Txn = {
+      transaction_id?: string;
+      normalised_provider_transaction_id?: string;
+      timestamp?: string;
+      description?: string;
+      amount?: number;
+      currency?: string;
+      transaction_type?: string; // "DEBIT" | "CREDIT"
+      transaction_category?: string;
+      transaction_classification?: string[];
+      merchant_name?: string;
+    };
+    type Listing<T> = { results?: T[] };
+
+    const base = account.kind === "card" ? "cards" : "accounts";
+    const to = new Date().toISOString().slice(0, 10);
+    const path = `/data/v1/${base}/${account.externalId}/transactions?from=${from}T00:00:00Z&to=${to}T23:59:59Z`;
+
+    const data = await this.get<Listing<Txn>>(accessToken, path).catch(
+      () => ({ results: [] }) as Listing<Txn>,
+    );
+
+    return (data.results ?? []).map((t) => {
+      const direction: TransactionDirection =
+        (t.transaction_type ?? "").toUpperCase() === "CREDIT"
+          ? "credit"
+          : "debit";
+      const magnitude = Math.abs(toCents(t.amount ?? 0));
+      const rawCategory =
+        t.transaction_classification?.join(" / ") ??
+        t.transaction_category ??
+        null;
+      const ts = t.timestamp ?? new Date().toISOString();
+      return {
+        externalId:
+          t.transaction_id ||
+          t.normalised_provider_transaction_id ||
+          `${ts}-${t.amount}-${t.description ?? ""}`,
+        description: t.description || t.merchant_name || "Transaction",
+        merchant: t.merchant_name ?? null,
+        amountCents: direction === "credit" ? magnitude : -magnitude,
+        direction,
+        currency: t.currency ?? "GBP",
+        date: ts.slice(0, 10),
+        bookedAt: ts,
+        rawCategory,
+      };
+    });
   }
 }

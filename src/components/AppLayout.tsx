@@ -6,6 +6,7 @@ import {
   ChartIcon,
   HomeIcon,
   LogoutIcon,
+  ReceiptIcon,
   UsersIcon,
   WalletIcon,
 } from "./icons";
@@ -22,6 +23,7 @@ const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: HomeIcon, end: true },
   { to: "/activities", label: "Activities", icon: CalendarIcon },
   { to: "/expenses", label: "Expenses", icon: WalletIcon },
+  { to: "/transactions", label: "Transactions", icon: ReceiptIcon },
   { to: "/finance", label: "Finance", icon: ChartIcon },
   { to: "/family", label: "Family", icon: UsersIcon },
 ];

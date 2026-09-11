@@ -1,5 +1,11 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 // A family is the top-level tenant. Everything else is scoped to a family.
 export const families = sqliteTable("families", {
@@ -211,6 +217,61 @@ export const bankOauthStates = sqliteTable("bank_oauth_states", {
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 
+// Bank transactions pulled from linked accounts. `amount_cents` is signed:
+// negative = money out (spend), positive = money in. `external_ref` is the
+// provider's transaction id and is unique per account so re-syncs dedupe.
+export const transactions = sqliteTable(
+  "transactions",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    connectionId: text("connection_id").references(() => bankConnections.id, {
+      onDelete: "set null",
+    }),
+    externalRef: text("external_ref").notNull(),
+    description: text("description").notNull(),
+    merchant: text("merchant"),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull().default("GBP"),
+    direction: text("direction", { enum: ["debit", "credit"] })
+      .notNull()
+      .default("debit"),
+    category: text("category", {
+      enum: [
+        "groceries",
+        "transport",
+        "utilities",
+        "school",
+        "leisure",
+        "health",
+        "housing",
+        "other",
+      ],
+    })
+      .notNull()
+      .default("other"),
+    categoryLocked: integer("category_locked", { mode: "boolean" })
+      .notNull()
+      .default(false), // true once a member overrides the auto-category
+    rawCategory: text("raw_category"),
+    date: text("date").notNull(), // YYYY-MM-DD
+    bookedAt: text("booked_at"), // ISO 8601 timestamp
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    familyDateIdx: index("transactions_family_date_idx").on(t.familyId, t.date),
+    accountRefUnique: uniqueIndex("transactions_account_ref_unique").on(
+      t.accountId,
+      t.externalRef,
+    ),
+  }),
+);
+
 export type FamilyRow = typeof families.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
@@ -218,3 +279,4 @@ export type ExpenseRow = typeof expenses.$inferSelect;
 export type AccountRow = typeof accounts.$inferSelect;
 export type BankConnectionRow = typeof bankConnections.$inferSelect;
 export type BankOauthStateRow = typeof bankOauthStates.$inferSelect;
+export type TransactionRow = typeof transactions.$inferSelect;

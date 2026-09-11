@@ -13,7 +13,9 @@ import type {
   FinanceSummary,
   LinkStartResponse,
   Member,
+  SpendingInsights,
   SyncResult,
+  Transaction,
 } from "@shared/types";
 
 function qs(params: Record<string, string | undefined>): string {
@@ -33,6 +35,8 @@ function useInvalidateAll() {
     qc.invalidateQueries({ queryKey: ["finance-summary"] });
     qc.invalidateQueries({ queryKey: ["members"] });
     qc.invalidateQueries({ queryKey: ["connections"] });
+    qc.invalidateQueries({ queryKey: ["transactions"] });
+    qc.invalidateQueries({ queryKey: ["insights"] });
   };
 }
 
@@ -249,5 +253,38 @@ export function useDisconnectBank() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/finance/connections/${id}`),
     onSuccess: invalidate,
+  });
+}
+
+// ---- Transactions ----
+export function useTransactions(params: {
+  month?: string;
+  category?: string;
+  accountId?: string;
+  direction?: string;
+} = {}) {
+  return useQuery({
+    queryKey: ["transactions", params],
+    queryFn: async () =>
+      (await api.get<{ transactions: Transaction[] }>(`/finance/transactions${qs(params)}`))
+        .transactions,
+  });
+}
+
+export function useUpdateTransactionCategory() {
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: ({ id, category }: { id: string; category: string }) =>
+      api.patch<{ transaction: Transaction }>(`/finance/transactions/${id}`, {
+        category,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useInsights(month?: string) {
+  return useQuery({
+    queryKey: ["insights", month ?? "current"],
+    queryFn: () => api.get<SpendingInsights>(`/finance/insights${qs({ month })}`),
   });
 }
