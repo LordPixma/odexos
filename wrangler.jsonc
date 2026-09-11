@@ -36,7 +36,7 @@
     // Bank provider: "mock" (built-in demo) or "truelayer". Leave unset to
     // auto-detect — TrueLayer is used when its credentials are configured,
     // otherwise the mock provider. TrueLayer environment: "sandbox" | "live".
-    "TRUELAYER_ENV": "sandbox"
+    "TRUELAYER_ENV": "live"
     // Secrets (set with `wrangler secret put <NAME>`), never commit these:
     //   TRUELAYER_CLIENT_ID, TRUELAYER_CLIENT_SECRET, ENCRYPTION_KEY
     // Optional: TRUELAYER_REDIRECT_URI, APP_URL, BANK_PROVIDER
