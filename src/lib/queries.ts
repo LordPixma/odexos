@@ -12,6 +12,8 @@ import type {
   Budget,
   BudgetsOverview,
   CategoryRule,
+  Chore,
+  ChoresOverview,
   DashboardData,
   Expense,
   FinanceSummary,
@@ -554,6 +556,65 @@ export function useDeleteMeal() {
   const invalidate = useInvalidateMeals();
   return useMutation({
     mutationFn: (id: string) => api.delete(`/household/meals/${id}`),
+    onSuccess: invalidate,
+  });
+}
+
+// ---- Chores ----
+function useInvalidateChores() {
+  const qc = useQueryClient();
+  return () => {
+    qc.invalidateQueries({ queryKey: ["chores"] });
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
+  };
+}
+
+export function useChores() {
+  return useQuery({
+    queryKey: ["chores"],
+    queryFn: () => api.get<ChoresOverview>("/chores"),
+  });
+}
+
+export function useCreateChore() {
+  const invalidate = useInvalidateChores();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      api.post<{ chore: Chore }>("/chores", body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateChore() {
+  const invalidate = useInvalidateChores();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      api.patch<{ chore: Chore }>(`/chores/${id}`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteChore() {
+  const invalidate = useInvalidateChores();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/chores/${id}`),
+    onSuccess: invalidate,
+  });
+}
+
+export function useCompleteChore() {
+  const invalidate = useInvalidateChores();
+  return useMutation({
+    mutationFn: ({ id, memberId }: { id: string; memberId?: string | null }) =>
+      api.post<{ chore: Chore }>(`/chores/${id}/complete`, { memberId }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUndoChore() {
+  const invalidate = useInvalidateChores();
+  return useMutation({
+    mutationFn: (id: string) => api.post<{ chore: Chore }>(`/chores/${id}/undo`),
     onSuccess: invalidate,
   });
 }

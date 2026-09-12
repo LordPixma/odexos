@@ -3,6 +3,7 @@ import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import { Card, EmptyState, MemberAvatar, PageLoader } from "../components/ui";
 import {
+  BroomIcon,
   CalendarIcon,
   ChartIcon,
   ClipboardIcon,
@@ -292,6 +293,16 @@ export default function DashboardPage() {
       icon: <CalendarIcon size={20} />,
       grad: ["#3b82f6", "#22d3ee"],
       stat: `${data.todayActivities.length} today · ${data.upcomingActivities.length} soon`,
+    },
+    {
+      to: "/chores",
+      label: "Chores",
+      icon: <BroomIcon size={20} />,
+      grad: ["#a855f7", "#7c3aed"],
+      stat:
+        data.choresOpen > 0
+          ? `${data.choresOpen} to do`
+          : "All caught up",
     },
     {
       to: "/household",

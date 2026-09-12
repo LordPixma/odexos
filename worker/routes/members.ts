@@ -14,6 +14,7 @@ import {
   requireEnum,
   requireString,
 } from "../lib/validate";
+import { MEMBER_COLORS } from "@shared/types";
 import type { Role } from "@shared/types";
 
 const ROLES: readonly Role[] = ["owner", "adult", "child", "member"];
@@ -44,12 +45,23 @@ members.post("/", async (c) => {
   const name = requireString(body.name, "Name", { max: 120 });
   const email = requireEmail(body.email);
   const role = requireEnum(body.role, ROLES, "Role");
-  const color = optionalString(body.color, "Color", { max: 20 }) ?? "#6366f1";
 
   const existing = await db.query.users.findFirst({
     where: eq(users.email, email),
   });
   if (existing) return c.json({ error: "That email is already in use" }, 409);
+
+  // Hand out the first colour nobody in the family has taken, so members are
+  // told apart at a glance instead of all sharing the default.
+  const family = await db.query.users.findMany({
+    where: eq(users.familyId, actor.familyId),
+    columns: { color: true },
+  });
+  const taken = new Set(family.map((m) => m.color));
+  const color =
+    optionalString(body.color, "Color", { max: 20 }) ??
+    MEMBER_COLORS.find((hex) => !taken.has(hex)) ??
+    MEMBER_COLORS[family.length % MEMBER_COLORS.length];
 
   const { token, tokenHash, expiresAt } = await createInviteToken();
   const now = new Date().toISOString();

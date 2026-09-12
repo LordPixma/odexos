@@ -18,6 +18,7 @@ import expenseRoutes from "./routes/expenses";
 import financeRoutes, { bankCallback } from "./routes/finance";
 import dashboardRoutes from "./routes/dashboard";
 import householdRoutes from "./routes/household";
+import choreRoutes from "./routes/chores";
 import notificationRoutes from "./routes/notifications";
 import familyRoutes from "./routes/family";
 
@@ -46,6 +47,7 @@ app.route("/api/activities", activityRoutes);
 app.route("/api/expenses", expenseRoutes);
 app.route("/api/finance", financeRoutes);
 app.route("/api/household", householdRoutes);
+app.route("/api/chores", choreRoutes);
 app.route("/api/notifications", notificationRoutes);
 app.route("/api/family", familyRoutes);
 app.route("/api/dashboard", dashboardRoutes);

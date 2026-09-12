@@ -6,6 +6,21 @@ export type Role = "owner" | "adult" | "child" | "member";
 
 export type MemberStatus = "active" | "invited";
 
+/**
+ * Avatar colours. New members are given the first one nobody in the family is
+ * using yet, so a household reads as distinct faces without anyone picking.
+ */
+export const MEMBER_COLORS: readonly string[] = [
+  "#6366f1",
+  "#ec4899",
+  "#f59e0b",
+  "#10b981",
+  "#0ea5e9",
+  "#8b5cf6",
+  "#ef4444",
+  "#14b8a6",
+];
+
 export interface Member {
   id: string;
   familyId: string;
@@ -314,6 +329,7 @@ export interface DashboardData {
   recentExpenses: Expense[]; // latest manually-logged expenses (family feed)
   spendTrend: DailySpend[]; // last 14 days, combined spend + income per day
   upcomingBirthdays: UpcomingBirthday[]; // next 90 days, soonest first
+  choresOpen: number; // chores overdue or due today
 }
 
 export interface DailySpend {
@@ -386,6 +402,54 @@ export interface Meal {
   title: string;
   notes: string | null;
   createdAt: string;
+}
+
+// ---- Chores ----
+
+export const CHORE_CADENCES = ["once", "daily", "weekly", "monthly"] as const;
+export type ChoreCadence = (typeof CHORE_CADENCES)[number];
+
+export const CHORE_CADENCE_LABELS: Record<ChoreCadence, string> = {
+  once: "One-off",
+  daily: "Every day",
+  weekly: "Every week",
+  monthly: "Every month",
+};
+
+/** Where the current occurrence sits relative to today. */
+export type ChoreStatus = "overdue" | "today" | "upcoming";
+
+export interface Chore {
+  id: string;
+  familyId: string;
+  title: string;
+  notes: string | null;
+  assignedTo: string | null; // member id; null = anyone
+  cadence: ChoreCadence;
+  dueDate: string; // YYYY-MM-DD of the open occurrence
+  points: number;
+  rotate: boolean;
+  streak: number;
+  archived: boolean;
+  createdAt: string;
+  // --- computed ---
+  status: ChoreStatus;
+  doneToday: boolean; // completed at some point today
+  lastCompletedAt: string | null;
+}
+
+/** Per-member tally for the current week. */
+export interface ChoreScore {
+  memberId: string;
+  done: number;
+  points: number;
+}
+
+export interface ChoresOverview {
+  chores: Chore[];
+  doneThisWeek: number;
+  openToday: number;
+  scores: ChoreScore[];
 }
 
 // ---- Notifications & family settings ----

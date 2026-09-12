@@ -464,6 +464,67 @@ export const meals = sqliteTable(
   }),
 );
 
+// Recurring household chores. `due_date` is the current open occurrence;
+// completing a chore records it and rolls the date forward by its cadence.
+export const chores = sqliteTable(
+  "chores",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    assignedTo: text("assigned_to").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    cadence: text("cadence", { enum: ["once", "daily", "weekly", "monthly"] })
+      .notNull()
+      .default("weekly"),
+    dueDate: text("due_date").notNull(), // YYYY-MM-DD of the open occurrence
+    points: integer("points").notNull().default(0),
+    // Hand the chore to the next family member each time it's completed.
+    rotate: integer("rotate", { mode: "boolean" }).notNull().default(false),
+    streak: integer("streak").notNull().default(0),
+    archived: integer("archived", { mode: "boolean" }).notNull().default(false),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    familyDueIdx: index("chores_family_due_idx").on(t.familyId, t.dueDate),
+  }),
+);
+
+// One row per completed occurrence, so streaks and "who did what" hold up.
+export const choreCompletions = sqliteTable(
+  "chore_completions",
+  {
+    id: text("id").primaryKey(),
+    choreId: text("chore_id")
+      .notNull()
+      .references(() => chores.id, { onDelete: "cascade" }),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    memberId: text("member_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    forDate: text("for_date").notNull(), // the occurrence that was completed
+    points: integer("points").notNull().default(0),
+    completedAt: text("completed_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    choreIdx: index("chore_completions_chore_idx").on(t.choreId),
+    familyIdx: index("chore_completions_family_idx").on(t.familyId, t.completedAt),
+    occurrenceUnique: uniqueIndex("chore_completions_occurrence_unique").on(
+      t.choreId,
+      t.forDate,
+    ),
+  }),
+);
+
 // In-app notifications (budget alerts, …). `dedupe_key` is unique per family
 // so the same alert isn't created twice.
 export const notifications = sqliteTable(
@@ -506,3 +567,5 @@ export type ListRow = typeof lists.$inferSelect;
 export type ListItemRow = typeof listItems.$inferSelect;
 export type MealRow = typeof meals.$inferSelect;
 export type NotificationRow = typeof notifications.$inferSelect;
+export type ChoreRow = typeof chores.$inferSelect;
+export type ChoreCompletionRow = typeof choreCompletions.$inferSelect;
