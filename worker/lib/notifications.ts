@@ -4,6 +4,7 @@ import { families, notifications, users } from "../db/schema";
 import { generateId } from "./crypto";
 import { buildBudgetsOverview, currentMonthKey } from "./budgets";
 import { getEmailProvider } from "./email";
+import { pushToFamily } from "./push";
 import type { Bindings } from "./types";
 import {
   EXPENSE_CATEGORY_LABELS,
@@ -116,6 +117,7 @@ export async function checkBudgetAlerts(
     });
     created++;
     await emailAlert(db, env, familyId, title, body);
+    await pushToFamily(db, env, familyId, { title, body, url: "/budgets", tag: dedupeKey }, "budget");
   }
 
   return created;

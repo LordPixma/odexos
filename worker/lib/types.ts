@@ -19,6 +19,11 @@ export interface Bindings {
   // Email alert delivery (optional — falls back to logging when unset).
   RESEND_API_KEY?: string; // secret
   RESEND_FROM?: string; // e.g. "OdexOS <alerts@yourdomain.com>"
+
+  // Web Push (optional — the app hides the notification toggle when unset).
+  VAPID_PUBLIC_KEY?: string; // handed to the browser when it subscribes
+  VAPID_PRIVATE_KEY?: string; // secret
+  VAPID_SUBJECT?: string; // mailto: or https: contact for the push service
 }
 
 export interface Variables {

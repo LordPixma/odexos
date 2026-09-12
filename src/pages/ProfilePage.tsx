@@ -16,6 +16,7 @@ import { BellIcon, UsersIcon } from "../components/icons";
 import AvatarPicker from "../components/AvatarPicker";
 import { ApiError } from "../lib/api";
 import { ROLE_LABELS } from "../lib/labels";
+import DeviceCard from "../components/DeviceCard";
 import { MEMBER_COLORS } from "@shared/types";
 
 
@@ -211,6 +212,8 @@ export default function ProfilePage() {
               />
             </div>
           </Card>
+
+          <DeviceCard />
         </div>
 
         {/* Account summary + save */}

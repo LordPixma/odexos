@@ -30,3 +30,12 @@
 # Set both to send budget-breach alerts via Resend (https://resend.com).
 # RESEND_API_KEY=re_your_api_key
 # RESEND_FROM=OdexOS <alerts@yourdomain.com>
+
+# --- Web Push notifications (optional) ---
+# Leave unset to hide the notifications toggle. Generate a VAPID key pair with:
+#   node -e "const{webcrypto:c}=require('node:crypto');(async()=>{const p=await c.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);console.log('VAPID_PUBLIC_KEY='+Buffer.from(await c.subtle.exportKey('raw',p.publicKey)).toString('base64url'));console.log('VAPID_PRIVATE_KEY='+Buffer.from(await c.subtle.exportKey('pkcs8',p.privateKey)).toString('base64url'));})()"
+# In production set VAPID_PRIVATE_KEY with `wrangler secret put`, not here.
+# VAPID_PUBLIC_KEY=B...
+# VAPID_PRIVATE_KEY=M...
+# Contact the push service can reach you at, if a subscription misbehaves.
+# VAPID_SUBJECT=mailto:you@yourdomain.com

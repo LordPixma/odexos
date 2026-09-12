@@ -3,6 +3,7 @@ import { useAuth } from "./lib/auth";
 import { PageLoader } from "./components/ui";
 import AppLayout from "./components/AppLayout";
 import AuthPage from "./pages/AuthPage";
+import OfflineNotice from "./components/OfflineNotice";
 import DashboardPage from "./pages/DashboardPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import HouseholdPage from "./pages/HouseholdPage";
@@ -19,7 +20,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 export default function App() {
-  const { auth, isLoading } = useAuth();
+  const { auth, isLoading, unreachable, retry } = useAuth();
 
   if (isLoading) {
     return (
@@ -27,6 +28,12 @@ export default function App() {
         <PageLoader />
       </div>
     );
+  }
+
+  // Offline (or the server is down) and not signed in: say so, rather than
+  // showing a sign-in form that can't reach anything.
+  if (!auth && unreachable) {
+    return <OfflineNotice onRetry={retry} />;
   }
 
   return (

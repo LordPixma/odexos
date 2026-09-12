@@ -3,6 +3,7 @@ import type { Db } from "../db/client";
 import { families, users } from "../db/schema";
 import type { UserRow } from "../db/schema";
 import { getEmailProvider } from "./email";
+import { pushToFamily } from "./push";
 import type { Bindings } from "./types";
 import type { UpcomingBirthday } from "@shared/types";
 
@@ -140,6 +141,16 @@ export async function sendBirthdayReminders(
     </td></tr>
     <tr><td style="padding:16px 4px;color:#64748b;font-size:12px;">Sent by ${appName}</td></tr>
   </table></body></html>`;
+
+  // A birthday is the kind of thing you want on your phone, not just in a
+  // mailbox you check twice a day.
+  await pushToFamily(
+    db,
+    env,
+    familyId,
+    { title: subject, body: lines.join(" · "), url: "/family", tag: `birthday:${todayKey}` },
+    "digest",
+  );
 
   try {
     await getEmailProvider(env).send({ to, subject, text, html });

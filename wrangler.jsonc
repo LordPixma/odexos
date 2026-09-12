@@ -38,9 +38,14 @@
     // Bank provider: "mock" (built-in demo) or "truelayer". Leave unset to
     // auto-detect — TrueLayer is used when its credentials are configured,
     // otherwise the mock provider. TrueLayer environment: "sandbox" | "live".
-    "TRUELAYER_ENV": "live"
+    "TRUELAYER_ENV": "live",
+    // Web Push. The public key is meant to be public — the browser needs it to
+    // subscribe. Its private half is a secret (VAPID_PRIVATE_KEY).
+    "VAPID_PUBLIC_KEY": "BNnA9ma0vOLEC3DA5_w3GfMEINYMA7Nfjg88oMd1149aLJCjVUetP5Zeioi47LYozh4H6OyDZXrBL1nhkAIkFsE",
+    "VAPID_SUBJECT": "mailto:samuel.odekunle@gmail.com"
     // Secrets (set with `wrangler secret put <NAME>`), never commit these:
-    //   TRUELAYER_CLIENT_ID, TRUELAYER_CLIENT_SECRET, ENCRYPTION_KEY
+    //   TRUELAYER_CLIENT_ID, TRUELAYER_CLIENT_SECRET, ENCRYPTION_KEY,
+    //   VAPID_PRIVATE_KEY
     // Optional: TRUELAYER_REDIRECT_URI, APP_URL, BANK_PROVIDER
   }
 }

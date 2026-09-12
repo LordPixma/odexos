@@ -21,6 +21,7 @@ import householdRoutes from "./routes/household";
 import choreRoutes from "./routes/chores";
 import notificationRoutes from "./routes/notifications";
 import calendarRoutes, { calendarFeed } from "./routes/calendar";
+import pushRoutes from "./routes/push";
 import familyRoutes from "./routes/family";
 
 const app = new Hono<AppEnv>();
@@ -55,6 +56,7 @@ app.route("/api/household", householdRoutes);
 app.route("/api/chores", choreRoutes);
 app.route("/api/notifications", notificationRoutes);
 app.route("/api/calendar", calendarRoutes);
+app.route("/api/push", pushRoutes);
 app.route("/api/family", familyRoutes);
 app.route("/api/dashboard", dashboardRoutes);
 

@@ -15,15 +15,24 @@ import type { AuthState, ResetPreview } from "@shared/types";
 interface AuthContextValue {
   auth: AuthState | null;
   isLoading: boolean;
+  /**
+   * The server couldn't be reached, as opposed to a clean 401. Offline, an
+   * installed app would otherwise show a sign-in form that can't work — and
+   * imply the family had been signed out, which they haven't.
+   */
+  unreachable: boolean;
+  retry: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   auth: null,
   isLoading: true,
+  unreachable: false,
+  retry: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
       try {
@@ -38,8 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const value = useMemo<AuthContextValue>(
-    () => ({ auth: data ?? null, isLoading }),
-    [data, isLoading],
+    () => ({
+      auth: data ?? null,
+      isLoading,
+      // A 401 resolves to null above, so an error here means the request never
+      // got an answer.
+      unreachable: isError,
+      retry: () => void refetch(),
+    }),
+    [data, isLoading, isError, refetch],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

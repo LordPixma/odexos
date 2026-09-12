@@ -555,6 +555,31 @@ export const notifications = sqliteTable(
   }),
 );
 
+// One per browser/device a member has turned notifications on in. Keyed by the
+// push service's endpoint URL, which is what identifies a subscription.
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(), // browser's ECDH public key
+    auth: text("auth").notNull(), // browser's auth secret
+    userAgent: text("user_agent"), // so a member can tell their devices apart
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+    lastUsedAt: text("last_used_at"),
+  },
+  (t) => ({
+    userIdx: index("push_subscriptions_user_idx").on(t.userId),
+    familyIdx: index("push_subscriptions_family_idx").on(t.familyId),
+  }),
+);
+
 export type FamilyRow = typeof families.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type MemberAvatarRow = typeof memberAvatars.$inferSelect;
@@ -572,3 +597,4 @@ export type MealRow = typeof meals.$inferSelect;
 export type NotificationRow = typeof notifications.$inferSelect;
 export type ChoreRow = typeof chores.$inferSelect;
 export type ChoreCompletionRow = typeof choreCompletions.$inferSelect;
+export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;

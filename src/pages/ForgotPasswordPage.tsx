@@ -21,16 +21,16 @@ export default function ForgotPasswordPage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-2xl">
             ✉️
           </div>
-          <h2 className="font-display text-xl font-bold text-slate-900">
+          <h2 className="font-display text-xl font-bold text-white">
             Check your email
           </h2>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-400">
             If an account exists for <span className="font-medium text-slate-700">{email}</span>,
             we've sent a link to reset your password. It expires in 60 minutes.
           </p>
           <Link
             to="/"
-            className="mt-5 inline-block text-sm font-semibold text-brand-600 hover:underline"
+            className="mt-5 inline-block text-sm font-semibold text-brand-400 hover:underline"
           >
             Back to sign in
           </Link>
@@ -42,10 +42,10 @@ export default function ForgotPasswordPage() {
   return (
     <AuthShell>
       <div className="mb-6 text-center">
-        <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">
+        <h2 className="font-display text-2xl font-bold tracking-tight text-white">
           Forgot your password?
         </h2>
-        <p className="mt-1.5 text-sm text-slate-500">
+        <p className="mt-1.5 text-sm text-slate-400">
           Enter your email and we'll send you a reset link.
         </p>
       </div>
@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
       </form>
 
       <p className="mt-5 text-center text-sm">
-        <Link to="/" className="font-semibold text-brand-600 hover:underline">
+        <Link to="/" className="font-semibold text-brand-400 hover:underline">
           Back to sign in
         </Link>
       </p>

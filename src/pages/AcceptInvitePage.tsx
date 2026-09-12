@@ -50,13 +50,13 @@ export default function AcceptInvitePage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-2xl">
             ⚠️
           </div>
-          <h2 className="font-display text-xl font-bold text-slate-900">
+          <h2 className="font-display text-xl font-bold text-white">
             Invite unavailable
           </h2>
-          <p className="mt-2 text-sm text-slate-500">{message}</p>
+          <p className="mt-2 text-sm text-slate-400">{message}</p>
           <Link
             to="/"
-            className="mt-5 inline-block text-sm font-semibold text-brand-600 hover:underline"
+            className="mt-5 inline-block text-sm font-semibold text-brand-400 hover:underline"
           >
             Go to sign in
           </Link>
@@ -71,18 +71,18 @@ export default function AcceptInvitePage() {
   return (
     <AuthShell>
       <div className="mb-6 text-center">
-        <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">
+        <h2 className="font-display text-2xl font-bold tracking-tight text-white">
           Join {invite.familyName}
         </h2>
-        <p className="mt-1.5 text-sm text-slate-500">
+        <p className="mt-1.5 text-sm text-slate-400">
           Hi {invite.name.split(" ")[0]} — set a password to activate your account.
         </p>
       </div>
 
-      <div className="mb-5 rounded-xl bg-sand-100 px-4 py-3 text-sm">
+      <div className="mb-5 rounded-xl bg-white/[0.04] ring-1 ring-white/10 px-4 py-3 text-sm">
         <div className="flex items-center justify-between">
-          <span className="text-slate-500">Signing in as</span>
-          <span className="font-medium text-slate-800">{invite.email}</span>
+          <span className="text-slate-400">Signing in as</span>
+          <span className="font-medium text-slate-200">{invite.email}</span>
         </div>
       </div>
 

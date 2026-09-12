@@ -52,13 +52,13 @@ export default function ResetPasswordPage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-2xl">
             ⚠️
           </div>
-          <h2 className="font-display text-xl font-bold text-slate-900">
+          <h2 className="font-display text-xl font-bold text-white">
             Reset link unavailable
           </h2>
-          <p className="mt-2 text-sm text-slate-500">{message}</p>
+          <p className="mt-2 text-sm text-slate-400">{message}</p>
           <Link
             to="/forgot"
-            className="mt-5 inline-block text-sm font-semibold text-brand-600 hover:underline"
+            className="mt-5 inline-block text-sm font-semibold text-brand-400 hover:underline"
           >
             Request a new link
           </Link>
@@ -72,10 +72,10 @@ export default function ResetPasswordPage() {
   return (
     <AuthShell>
       <div className="mb-6 text-center">
-        <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">
+        <h2 className="font-display text-2xl font-bold tracking-tight text-white">
           Set a new password
         </h2>
-        <p className="mt-1.5 text-sm text-slate-500">
+        <p className="mt-1.5 text-sm text-slate-400">
           for {preview.data.email}
         </p>
       </div>
