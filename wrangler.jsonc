@@ -35,6 +35,11 @@
   },
   "vars": {
     "APP_NAME": "OdexOS",
+    // Canonical home. Every link the server hands out — invite and password
+    // reset emails, the calendar subscribe URL, the bank OAuth redirect — is
+    // built from this, so they don't vary by whichever hostname a request
+    // happened to arrive on.
+    "APP_URL": "https://dashboard.odekunle.com",
     // Bank provider: "mock" (built-in demo) or "truelayer". Leave unset to
     // auto-detect — TrueLayer is used when its credentials are configured,
     // otherwise the mock provider. TrueLayer environment: "sandbox" | "live".
