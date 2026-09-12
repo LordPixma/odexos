@@ -145,11 +145,11 @@ export default function MembersPage() {
       />
 
       {notice && (
-        <div className="flex items-start justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+        <div className="flex items-start justify-between gap-3 rounded-xl border border-brand-500/25 bg-brand-500/15 px-4 py-3 text-sm text-brand-200">
           <span>{notice}</span>
           <button
             onClick={() => setNotice(null)}
-            className="shrink-0 text-brand-600 hover:text-brand-800"
+            className="shrink-0 text-brand-300 hover:text-brand-200"
             aria-label="Dismiss"
           >
             ✕
@@ -170,14 +170,14 @@ export default function MembersPage() {
                 <Avatar name={m.name} color={m.color} size={48} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold text-slate-900">
+                    <span className="truncate font-semibold text-white">
                       {m.name}
                     </span>
                     {isSelf && (
-                      <span className="chip bg-slate-100 text-slate-500">You</span>
+                      <span className="chip bg-white/[0.06] text-slate-400">You</span>
                     )}
                   </div>
-                  <div className="truncate text-sm text-slate-500">{m.email}</div>
+                  <div className="truncate text-sm text-slate-400">{m.email}</div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <span
                       className="chip"
@@ -203,7 +203,7 @@ export default function MembersPage() {
                     <button
                       onClick={() => doResend(m)}
                       disabled={resend.isPending}
-                      className="rounded-md px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50 disabled:opacity-50"
+                      className="rounded-md px-2 py-1 text-xs font-semibold text-brand-300 hover:bg-brand-500/150/15 disabled:opacity-50"
                     >
                       Resend
                     </button>
@@ -211,7 +211,7 @@ export default function MembersPage() {
                   {canEdit && (
                     <button
                       onClick={() => openEdit(m)}
-                      className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-white/10 hover:text-slate-200"
                       aria-label="Edit"
                     >
                       <EditIcon />
@@ -224,7 +224,7 @@ export default function MembersPage() {
                             if (confirm(`Revoke the invite for ${m.name}?`))
                               remove.mutate(m.id);
                           }}
-                          className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
                           aria-label="Revoke invite"
                         >
                           <TrashIcon />
@@ -237,7 +237,7 @@ export default function MembersPage() {
                             if (confirm(`Remove ${m.name} from the family?`))
                               remove.mutate(m.id);
                           }}
-                          className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
                           aria-label="Remove"
                         >
                           <TrashIcon />

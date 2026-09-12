@@ -3,11 +3,17 @@ import { and, asc, desc, eq, gte, lte, ne } from "drizzle-orm";
 import {
   accounts,
   activities,
+  expenses,
   families,
   transactions,
   users,
 } from "../db/schema";
-import { toActivity, toMember, toTransaction } from "../lib/serialize";
+import {
+  toActivity,
+  toExpense,
+  toMember,
+  toTransaction,
+} from "../lib/serialize";
 import { expandActivities } from "../lib/recurrence";
 import {
   buildBudgetsOverview,
@@ -109,6 +115,57 @@ app.get("/", async (c) => {
   });
   const recentTransactions = recentTxnRows.map(toTransaction);
 
+  const recentExpenseRows = await db.query.expenses.findMany({
+    where: eq(expenses.familyId, familyId),
+    orderBy: [desc(expenses.spentAt), desc(expenses.createdAt)],
+    limit: 6,
+  });
+  const recentExpenses = recentExpenseRows.map(toExpense);
+
+  // 14-day daily trend: combined spend (manual expenses + bank debits) and
+  // income (bank credits), bucketed by day.
+  const TREND_DAYS = 14;
+  const trendStartMs = todayStart.getTime() - (TREND_DAYS - 1) * 86400000;
+  const trendStartYmd = new Date(trendStartMs).toISOString().slice(0, 10);
+  const todayYmd = new Date(todayStart.getTime()).toISOString().slice(0, 10);
+
+  const trendExpenses = await db.query.expenses.findMany({
+    where: and(
+      eq(expenses.familyId, familyId),
+      gte(expenses.spentAt, trendStartYmd),
+      lte(expenses.spentAt, todayYmd),
+    ),
+  });
+  const trendTxns = await db.query.transactions.findMany({
+    where: and(
+      eq(transactions.familyId, familyId),
+      gte(transactions.date, trendStartYmd),
+      lte(transactions.date, todayYmd),
+    ),
+  });
+  const spendBucket = new Map<string, number>();
+  const incomeBucket = new Map<string, number>();
+  for (let i = 0; i < TREND_DAYS; i++) {
+    const d = new Date(trendStartMs + i * 86400000).toISOString().slice(0, 10);
+    spendBucket.set(d, 0);
+    incomeBucket.set(d, 0);
+  }
+  for (const e of trendExpenses) {
+    spendBucket.set(e.spentAt, (spendBucket.get(e.spentAt) ?? 0) + e.amountCents);
+  }
+  for (const t of trendTxns) {
+    if (t.direction === "credit") {
+      incomeBucket.set(t.date, (incomeBucket.get(t.date) ?? 0) + Math.abs(t.amountCents));
+    } else {
+      spendBucket.set(t.date, (spendBucket.get(t.date) ?? 0) + Math.abs(t.amountCents));
+    }
+  }
+  const spendTrend = [...spendBucket.keys()].sort().map((date) => ({
+    date,
+    spendCents: spendBucket.get(date) ?? 0,
+    incomeCents: incomeBucket.get(date) ?? 0,
+  }));
+
   // Finance summary.
   const accountRows = await db.query.accounts.findMany({
     where: eq(accounts.familyId, familyId),
@@ -147,7 +204,10 @@ app.get("/", async (c) => {
     expenseByCategory,
     finance,
     budgetAlerts: budgetOverview.alerts,
+    budgets: budgetOverview.categories,
     recentTransactions,
+    recentExpenses,
+    spendTrend,
   };
   return c.json(data);
 });

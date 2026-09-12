@@ -32,12 +32,18 @@ export default {
           800: "#7f3b16",
           900: "#693115",
         },
-        // Warm neutral canvas + ink (replaces the cold slate default look).
+        // Warm neutral canvas + ink (kept for the light auth cards).
         sand: {
           50: "#faf8f4",
           100: "#f4f1ea",
           200: "#e9e3d8",
           300: "#d8cfbf",
+        },
+        // Dark UI surfaces.
+        ink: "#0a0d17",
+        surface: {
+          DEFAULT: "#141b2b",
+          2: "#1b2336",
         },
       },
       fontFamily: {
@@ -63,6 +69,8 @@ export default {
       boxShadow: {
         soft: "0 1px 2px rgba(20, 30, 25, 0.04), 0 8px 24px -12px rgba(20, 30, 25, 0.12)",
         lift: "0 2px 6px rgba(20, 30, 25, 0.06), 0 18px 40px -18px rgba(20, 30, 25, 0.22)",
+        glass:
+          "inset 0 1px 0 0 rgba(255,255,255,0.05), 0 10px 30px -14px rgba(0,0,0,0.65)",
       },
       borderRadius: {
         "2xl": "1.1rem",

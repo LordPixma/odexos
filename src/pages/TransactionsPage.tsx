@@ -36,7 +36,7 @@ function currentMonth(): string {
 function Stat({
   label,
   value,
-  accent = "#0f172a",
+  accent = "#f1f5f9",
 }: {
   label: string;
   value: string;
@@ -44,7 +44,7 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </div>
       <div className="mt-1 font-display text-xl font-bold" style={{ color: accent }}>
@@ -135,7 +135,7 @@ export default function TransactionsPage() {
           {/* Insights */}
           <Card className="p-5">
             <div className="grid gap-6 lg:grid-cols-[auto,1fr]">
-              <div className="grid grid-cols-3 gap-6 lg:flex lg:flex-col lg:gap-4 lg:pr-6 lg:border-r lg:border-slate-100">
+              <div className="grid grid-cols-3 gap-6 lg:flex lg:flex-col lg:gap-4 lg:pr-6 lg:border-r lg:border-white/10">
                 <Stat
                   label="Spent"
                   value={formatMoney(insights?.totalSpentCents ?? 0, currency)}
@@ -153,24 +153,24 @@ export default function TransactionsPage() {
               </div>
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
-                  <div className="mb-2 text-sm font-semibold text-slate-700">
+                  <div className="mb-2 text-sm font-semibold text-slate-200">
                     By category
                   </div>
                   {(insights?.byCategory ?? []).length === 0 ? (
-                    <p className="text-sm text-slate-400">No spending this month.</p>
+                    <p className="text-sm text-slate-500">No spending this month.</p>
                   ) : (
                     <div className="space-y-2">
                       {insights?.byCategory.map(({ category: cat, amountCents }) => (
                         <div key={cat}>
                           <div className="mb-1 flex justify-between text-xs">
-                            <span className="text-slate-600">
+                            <span className="text-slate-300">
                               {EXPENSE_CATEGORY_LABELS[cat]}
                             </span>
-                            <span className="font-medium text-slate-800">
+                            <span className="font-medium text-slate-100">
                               {formatMoney(amountCents, currency)}
                             </span>
                           </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
                             <div
                               className="h-full rounded-full"
                               style={{
@@ -185,25 +185,25 @@ export default function TransactionsPage() {
                   )}
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-semibold text-slate-700">
+                  <div className="mb-2 text-sm font-semibold text-slate-200">
                     Top merchants
                   </div>
                   {(insights?.topMerchants ?? []).length === 0 ? (
-                    <p className="text-sm text-slate-400">Nothing yet.</p>
+                    <p className="text-sm text-slate-500">Nothing yet.</p>
                   ) : (
-                    <div className="divide-y divide-slate-100">
+                    <div className="divide-y divide-white/10">
                       {insights?.topMerchants.map((m) => (
                         <div
                           key={m.merchant}
                           className="flex items-center justify-between py-1.5 text-sm"
                         >
-                          <span className="truncate text-slate-600">
+                          <span className="truncate text-slate-300">
                             {m.merchant}
-                            <span className="ml-1 text-xs text-slate-400">
+                            <span className="ml-1 text-xs text-slate-500">
                               ×{m.count}
                             </span>
                           </span>
-                          <span className="font-medium text-slate-800">
+                          <span className="font-medium text-slate-100">
                             {formatMoney(m.amountCents, currency)}
                           </span>
                         </div>
@@ -262,7 +262,7 @@ export default function TransactionsPage() {
           {(transactions ?? []).length === 0 ? (
             <EmptyState icon="🧾" title="No transactions match these filters" />
           ) : (
-            <Card className="divide-y divide-slate-100">
+            <Card className="divide-y divide-white/10">
               {(transactions ?? []).map((t) => {
                 const account = accountById.get(t.accountId);
                 const isCredit = t.direction === "credit";
@@ -270,10 +270,10 @@ export default function TransactionsPage() {
                 return (
                   <div key={t.id} className="flex items-center gap-3 p-4">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium text-slate-900">
+                      <div className="truncate font-medium text-white">
                         {t.merchant || t.description}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
                         <span>{formatDate(t.date)}</span>
                         {account && (
                           <>
@@ -284,7 +284,7 @@ export default function TransactionsPage() {
                         {t.categoryLocked && (
                           <>
                             <span>·</span>
-                            <span className="text-slate-400">edited</span>
+                            <span className="text-slate-500">edited</span>
                           </>
                         )}
                       </div>
@@ -295,7 +295,7 @@ export default function TransactionsPage() {
                         recategorise.mutate({ id: t.id, category: e.target.value })
                       }
                       disabled={isCredit}
-                      className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 focus:border-brand-500 focus:outline-none disabled:opacity-50"
+                      className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-xs font-medium text-slate-300 focus:border-brand-500 focus:outline-none disabled:opacity-50"
                       style={{ color: isCredit ? undefined : color }}
                       aria-label="Category"
                     >
@@ -311,7 +311,7 @@ export default function TransactionsPage() {
                     </select>
                     <div
                       className="w-24 text-right font-semibold tabular-nums"
-                      style={{ color: isCredit ? "#0f766e" : "#0f172a" }}
+                      style={{ color: isCredit ? "#34d399" : "#f1f5f9" }}
                     >
                       {isCredit ? "+" : "−"}
                       {formatMoney(Math.abs(t.amountCents), t.currency)}
@@ -330,7 +330,7 @@ export default function TransactionsPage() {
         title="Category rules"
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Teach the auto-categoriser: when a transaction's merchant or
             description contains a phrase, always file it under a category. Your
             rules beat the built-in ones and apply to existing transactions too
@@ -373,16 +373,16 @@ export default function TransactionsPage() {
           <ErrorBanner message={(createRule.error as ApiError | null)?.message} />
 
           {rules.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center text-sm text-slate-400">
+            <p className="rounded-lg border border-dashed border-white/10 bg-white/[0.04] px-3 py-4 text-center text-sm text-slate-500">
               No custom rules yet.
             </p>
           ) : (
-            <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+            <div className="divide-y divide-white/10 rounded-lg border border-white/10">
               {rules.map((r) => (
                 <div key={r.id} className="flex items-center gap-2 px-3 py-2 text-sm">
-                  <span className="min-w-0 flex-1 truncate text-slate-600">
+                  <span className="min-w-0 flex-1 truncate text-slate-300">
                     Contains{" "}
-                    <span className="font-medium text-slate-900">"{r.pattern}"</span>{" "}
+                    <span className="font-medium text-white">"{r.pattern}"</span>{" "}
                     →{" "}
                     <span
                       className="font-medium"
@@ -393,7 +393,7 @@ export default function TransactionsPage() {
                   </span>
                   <button
                     onClick={() => deleteRule.mutate(r.id)}
-                    className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
                     aria-label="Delete rule"
                   >
                     <TrashIcon />
@@ -408,7 +408,7 @@ export default function TransactionsPage() {
               type="button"
               onClick={() => applyRules.mutate()}
               disabled={applyRules.isPending}
-              className="text-sm font-medium text-brand-600 hover:underline disabled:opacity-50"
+              className="text-sm font-medium text-brand-300 hover:underline disabled:opacity-50"
             >
               Re-apply to existing transactions
             </button>

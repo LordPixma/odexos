@@ -10,7 +10,7 @@ import { initials } from "../lib/format";
 export function Spinner({ className = "" }: { className?: string }) {
   return (
     <span
-      className={`inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand-600 ${className}`}
+      className={`inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/15 border-t-brand-400 ${className}`}
       role="status"
       aria-label="Loading"
     />
@@ -68,8 +68,8 @@ export function SectionTitle({
   return (
     <div className="mb-4 flex items-end justify-between gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-        {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+        <h2 className="text-lg font-semibold text-white">{title}</h2>
+        {subtitle && <p className="text-sm text-slate-400">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -107,10 +107,10 @@ export function PageHeader({
           </span>
         )}
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-white">
             {title}
           </h1>
-          {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-slate-400">{subtitle}</p>}
         </div>
       </div>
       {action}
@@ -142,10 +142,10 @@ export function SectionHead({
           {icon}
         </span>
         <div>
-          <h2 className="font-display text-base font-semibold leading-tight text-slate-900">
+          <h2 className="font-display text-base font-semibold leading-tight text-white">
             {title}
           </h2>
-          {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
         </div>
       </div>
       {action}
@@ -174,7 +174,7 @@ export function StatTile({
         <span className="font-display text-2xl font-bold" style={{ color: tint }}>
           {value}
         </span>
-        {hint && <span className="text-xs text-slate-500">{hint}</span>}
+        {hint && <span className="text-xs text-slate-400">{hint}</span>}
       </div>
     </Card>
   );
@@ -268,11 +268,11 @@ export function EmptyState({
   icon?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-12 text-center">
       {icon && <div className="mb-3 text-3xl">{icon}</div>}
-      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+      <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-slate-500">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-slate-400">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -282,7 +282,7 @@ export function EmptyState({
 export function ErrorBanner({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+    <div className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-300">
       {message}
     </div>
   );
@@ -303,17 +303,17 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
-      <div className="card relative z-10 my-8 w-full max-w-lg p-6">
+      <div className="card relative z-10 my-8 w-full max-w-lg bg-surface p-6">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+          <h2 className="text-lg font-semibold text-white">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-md p-1 text-slate-400 hover:bg-white/10 hover:text-slate-200"
             aria-label="Close"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">

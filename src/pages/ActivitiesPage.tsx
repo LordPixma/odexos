@@ -203,10 +203,10 @@ export default function ActivitiesPage() {
         <div className="space-y-6">
           {grouped.map(([day, items]) => (
             <div key={day}>
-              <h2 className="mb-2 text-sm font-semibold text-slate-500">
+              <h2 className="mb-2 text-sm font-semibold text-slate-400">
                 {relativeDay(items[0].startsAt)}
               </h2>
-              <Card className="divide-y divide-slate-100">
+              <Card className="divide-y divide-white/10">
                 {items.map((a) => {
                   const color = ACTIVITY_COLORS[a.category];
                   const member = a.memberId ? memberById.get(a.memberId) : undefined;
@@ -218,7 +218,7 @@ export default function ActivitiesPage() {
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium text-slate-900">
+                          <span className="font-medium text-white">
                             {a.title}
                           </span>
                           <span
@@ -228,12 +228,12 @@ export default function ActivitiesPage() {
                             {ACTIVITY_CATEGORY_LABELS[a.category]}
                           </span>
                           {a.recurrence !== "none" && (
-                            <span className="chip bg-slate-100 text-slate-500" title="Repeats">
+                            <span className="chip bg-white/[0.06] text-slate-400" title="Repeats">
                               ↻ {RECURRENCE_SHORT[a.recurrence]}
                             </span>
                           )}
                         </div>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-slate-400">
                           <span className="inline-flex items-center gap-1">
                             <ClockIcon />
                             {a.allDay ? "All day" : formatTime(a.startsAt)}
@@ -252,7 +252,7 @@ export default function ActivitiesPage() {
                       <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
                         <button
                           onClick={() => openEdit(a)}
-                          className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          className="rounded-md p-1.5 text-slate-500 hover:bg-white/10 hover:text-slate-200"
                           aria-label="Edit"
                         >
                           <EditIcon />
@@ -265,7 +265,7 @@ export default function ActivitiesPage() {
                                 : `Delete "${a.title}"?`;
                             if (confirm(msg)) remove.mutate(a.seriesId ?? a.id);
                           }}
-                          className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
                           aria-label="Delete"
                         >
                           <TrashIcon />
@@ -338,12 +338,12 @@ export default function ActivitiesPage() {
               />
             </Field>
           </div>
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-slate-300">
             <input
               type="checkbox"
               checked={form.allDay}
               onChange={(e) => setForm({ ...form, allDay: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-white/10 text-brand-300 focus:ring-brand-500"
             />
             All-day activity
           </label>
