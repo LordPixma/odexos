@@ -49,6 +49,18 @@ export const users = sqliteTable(
     invitedAt: text("invited_at"), // ISO 8601
     resetTokenHash: text("reset_token_hash"), // SHA-256 of the password-reset token
     resetExpiresAt: text("reset_expires_at"), // ISO 8601
+    // --- personalisation ---
+    nickname: text("nickname"), // what the family actually calls them
+    pronouns: text("pronouns"),
+    birthday: text("birthday"), // YYYY-MM-DD
+    // 0 = no photo; bumped on every upload so <img> URLs cache-bust.
+    avatarVersion: integer("avatar_version").notNull().default(0),
+    notifyBudgetAlerts: integer("notify_budget_alerts", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    notifyWeeklyDigest: integer("notify_weekly_digest", { mode: "boolean" })
+      .notNull()
+      .default(true),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },
   (t) => ({
@@ -57,6 +69,17 @@ export const users = sqliteTable(
     resetTokenIdx: index("users_reset_token_idx").on(t.resetTokenHash),
   }),
 );
+
+// Member profile photos, kept out of `users` so member lists stay light.
+// Stored as base64 of a small (256px) WebP the browser crops before upload.
+export const memberAvatars = sqliteTable("member_avatars", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  mime: text("mime").notNull(),
+  data: text("data").notNull(), // base64, no data: prefix
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
 
 // Opaque session tokens, stored server-side so we can revoke them.
 export const sessions = sqliteTable(
@@ -468,6 +491,7 @@ export const notifications = sqliteTable(
 
 export type FamilyRow = typeof families.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
+export type MemberAvatarRow = typeof memberAvatars.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
 export type ExpenseRow = typeof expenses.$inferSelect;
 export type AccountRow = typeof accounts.$inferSelect;

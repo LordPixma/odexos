@@ -104,11 +104,41 @@ export function useInvitePreview(token: string) {
 }
 
 export function useUpdateMember() {
+  const qc = useQueryClient();
   const invalidate = useInvalidateAll();
   return useMutation({
     mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
       api.patch<{ member: Member }>(`/members/${id}`, body),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}
+
+/** Upload a member's profile photo (already cropped to a small data URL). */
+export function useUploadAvatar() {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: ({ id, dataUrl }: { id: string; dataUrl: string }) =>
+      api.post<{ member: Member }>(`/members/${id}/avatar`, { dataUrl }),
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}
+
+export function useRemoveAvatar() {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateAll();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ member: Member }>(`/members/${id}/avatar`),
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
   });
 }
 

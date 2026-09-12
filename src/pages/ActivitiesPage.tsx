@@ -7,7 +7,7 @@ import {
   useUpdateActivity,
 } from "../lib/queries";
 import {
-  Avatar,
+  MemberAvatar,
   Button,
   Card,
   EmptyState,
@@ -247,7 +247,7 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
                       {member && (
-                        <Avatar name={member.name} color={member.color} size={30} />
+                        <MemberAvatar member={member} size={30} />
                       )}
                       <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
                         <button

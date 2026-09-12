@@ -56,8 +56,13 @@ async function emailAlert(
   });
   if (!fam || !fam.alertEmails) return;
 
+  // Only active members who still want budget alerts.
   const members = await db.query.users.findMany({
-    where: eq(users.familyId, familyId),
+    where: and(
+      eq(users.familyId, familyId),
+      eq(users.status, "active"),
+      eq(users.notifyBudgetAlerts, true),
+    ),
     columns: { email: true },
   });
   const to = members.map((m) => m.email).filter(Boolean);

@@ -15,7 +15,7 @@ import {
   useUpdateMeal,
 } from "../lib/queries";
 import {
-  Avatar,
+  MemberAvatar,
   Button,
   Card,
   EmptyState,
@@ -42,6 +42,7 @@ import {
   type ListWithItems,
   type Meal,
   type MealSlot,
+  type Member,
 } from "@shared/types";
 
 // ---- date helpers (local) ----
@@ -78,7 +79,7 @@ function ListCard({
   members,
 }: {
   list: ListWithItems;
-  members: { id: string; name: string; color: string }[];
+  members: Member[];
 }) {
   const addItem = useAddListItem();
   const updateItem = useUpdateListItem();
@@ -156,7 +157,7 @@ function ListCard({
                 >
                   {item.text}
                 </span>
-                {owner && <Avatar name={owner.name} color={owner.color} size={20} />}
+                {owner && <MemberAvatar member={owner} size={20} />}
                 <button
                   onClick={() => deleteItem.mutate(item.id)}
                   className="rounded p-1 text-slate-300 opacity-0 transition hover:text-red-300 group-hover:opacity-100"

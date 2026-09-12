@@ -7,7 +7,7 @@ import {
   useUpdateExpense,
 } from "../lib/queries";
 import {
-  Avatar,
+  MemberAvatar,
   Button,
   Card,
   EmptyState,
@@ -199,7 +199,7 @@ export default function ExpensesPage() {
                       <>
                         <span>·</span>
                         <span className="inline-flex items-center gap-1">
-                          <Avatar name={payer.name} color={payer.color} size={16} />
+                          <MemberAvatar member={payer} size={16} />
                           {payer.name}
                         </span>
                       </>
