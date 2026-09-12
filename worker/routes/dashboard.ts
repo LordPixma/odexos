@@ -3,6 +3,8 @@ import { and, asc, desc, eq, gte, lte, ne } from "drizzle-orm";
 import {
   accounts,
   activities,
+  choreCompletions,
+  chores,
   expenses,
   families,
   transactions,
@@ -15,6 +17,7 @@ import {
   toTransaction,
 } from "../lib/serialize";
 import { expandActivities } from "../lib/recurrence";
+import { upcomingBirthdays } from "../lib/birthdays";
 import {
   buildBudgetsOverview,
   computeSpendByCategory,
@@ -191,6 +194,27 @@ app.get("/", async (c) => {
       .map(([type, balanceCents]) => ({ type, balanceCents })),
   };
 
+  // Chores overdue or due today (completing one rolls its due date forward).
+  // A daily chore that was overdue rolls onto today, so anything already ticked
+  // off today is dropped — otherwise this count outruns the Chores page.
+  const dueChores = await db.query.chores.findMany({
+    where: and(
+      eq(chores.familyId, familyId),
+      eq(chores.archived, false),
+      lte(chores.dueDate, todayYmd),
+    ),
+    columns: { id: true },
+  });
+  const doneTodayRows = await db.query.choreCompletions.findMany({
+    where: and(
+      eq(choreCompletions.familyId, familyId),
+      gte(choreCompletions.completedAt, todayYmd),
+    ),
+    columns: { choreId: true },
+  });
+  const doneToday = new Set(doneTodayRows.map((r) => r.choreId));
+  const openChores = dueChores.filter((ch) => !doneToday.has(ch.id));
+
   const budgetOverview = await buildBudgetsOverview(db, familyId, monthKey);
 
   const data: DashboardData = {
@@ -208,6 +232,8 @@ app.get("/", async (c) => {
     recentTransactions,
     recentExpenses,
     spendTrend,
+    upcomingBirthdays: upcomingBirthdays(memberRows, now).slice(0, 4),
+    choresOpen: openChores.length,
   };
   return c.json(data);
 });

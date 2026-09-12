@@ -3,6 +3,7 @@ import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import { Card, EmptyState, MemberAvatar, PageLoader } from "../components/ui";
 import {
+  BroomIcon,
   CalendarIcon,
   ChartIcon,
   ClipboardIcon,
@@ -292,6 +293,16 @@ export default function DashboardPage() {
       icon: <CalendarIcon size={20} />,
       grad: ["#3b82f6", "#22d3ee"],
       stat: `${data.todayActivities.length} today · ${data.upcomingActivities.length} soon`,
+    },
+    {
+      to: "/chores",
+      label: "Chores",
+      icon: <BroomIcon size={20} />,
+      grad: ["#a855f7", "#7c3aed"],
+      stat:
+        data.choresOpen > 0
+          ? `${data.choresOpen} to do`
+          : "All caught up",
     },
     {
       to: "/household",
@@ -625,6 +636,55 @@ export default function DashboardPage() {
             </div>
           )}
         </Card>
+
+        {/* Birthdays */}
+        {data.upcomingBirthdays.length > 0 && (
+          <Card className="p-5">
+            <CardHead title="Birthdays" subtitle="Coming up" />
+            <div className="space-y-3">
+              {data.upcomingBirthdays.map((b) => {
+                const today = b.daysUntil === 0;
+                return (
+                  <div key={b.memberId} className="flex items-center gap-3">
+                    <MemberAvatar
+                      member={{
+                        id: b.memberId,
+                        name: b.name,
+                        color: b.color,
+                        avatarVersion: b.avatarVersion,
+                      }}
+                      size={32}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-slate-100">
+                        {b.nickname || b.name}
+                        {b.turning !== null && (
+                          <span className="text-slate-400"> turns {b.turning}</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {formatDate(`${b.date}T12:00:00Z`)}
+                      </div>
+                    </div>
+                    <span
+                      className={`chip shrink-0 ${
+                        today
+                          ? "bg-accent-400/20 text-accent-300"
+                          : "bg-white/[0.06] text-slate-400"
+                      }`}
+                    >
+                      {today
+                        ? "🎂 Today"
+                        : b.daysUntil === 1
+                          ? "Tomorrow"
+                          : `${b.daysUntil}d`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
 
         {/* Family feed */}
         <Card className="p-5">

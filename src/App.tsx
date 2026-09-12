@@ -12,6 +12,7 @@ import BudgetsPage from "./pages/BudgetsPage";
 import FinancePage from "./pages/FinancePage";
 import MembersPage from "./pages/MembersPage";
 import ProfilePage from "./pages/ProfilePage";
+import ChoresPage from "./pages/ChoresPage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -38,6 +39,7 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="activities" element={<ActivitiesPage />} />
           <Route path="household" element={<HouseholdPage />} />
+          <Route path="chores" element={<ChoresPage />} />
           <Route path="expenses" element={<ExpensesPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="budgets" element={<BudgetsPage />} />

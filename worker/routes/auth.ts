@@ -13,18 +13,9 @@ import { createResetToken, sendResetEmail } from "../lib/reset";
 import { toMember } from "../lib/serialize";
 import type { AppEnv } from "../lib/types";
 import { requireEmail, requireString } from "../lib/validate";
+import { MEMBER_COLORS } from "@shared/types";
 import type { AuthState, ResetPreview } from "@shared/types";
 
-const DEFAULT_COLORS = [
-  "#6366f1",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#0ea5e9",
-  "#8b5cf6",
-  "#ef4444",
-  "#14b8a6",
-];
 
 const auth = new Hono<AppEnv>();
 
@@ -55,7 +46,7 @@ auth.post("/register", async (c) => {
     email,
     passwordHash: await hashPassword(password),
     role: "owner",
-    color: DEFAULT_COLORS[0],
+    color: MEMBER_COLORS[0],
   });
 
   await startSession(c, db, userId);
@@ -68,7 +59,7 @@ auth.post("/register", async (c) => {
     email,
     passwordHash: "",
     role: "owner",
-    color: DEFAULT_COLORS[0],
+    color: MEMBER_COLORS[0],
     status: "active",
     inviteTokenHash: null,
     inviteExpiresAt: null,

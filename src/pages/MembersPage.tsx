@@ -23,18 +23,9 @@ import { EditIcon, PlusIcon, TrashIcon, UsersIcon } from "../components/icons";
 import AvatarPicker from "../components/AvatarPicker";
 import { ApiError } from "../lib/api";
 import { ROLE_LABELS } from "../lib/labels";
+import { MEMBER_COLORS } from "@shared/types";
 import type { Member, Role } from "@shared/types";
 
-const SWATCHES = [
-  "#6366f1",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#0ea5e9",
-  "#8b5cf6",
-  "#ef4444",
-  "#14b8a6",
-];
 
 const PENDING_COLOR = "#e0930f";
 
@@ -53,7 +44,7 @@ function emptyForm(): FormState {
     name: "",
     email: "",
     role: "adult",
-    color: SWATCHES[0],
+    color: MEMBER_COLORS[0],
     nickname: "",
     pronouns: "",
     birthday: "",
@@ -358,7 +349,7 @@ export default function MembersPage() {
             </Field>
             <Field label="Colour">
               <div className="flex flex-wrap gap-2 pt-1.5">
-                {SWATCHES.map((c) => (
+                {MEMBER_COLORS.map((c) => (
                   <button
                     key={c}
                     type="button"

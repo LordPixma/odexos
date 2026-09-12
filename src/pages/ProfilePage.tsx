@@ -16,17 +16,8 @@ import { BellIcon, UsersIcon } from "../components/icons";
 import AvatarPicker from "../components/AvatarPicker";
 import { ApiError } from "../lib/api";
 import { ROLE_LABELS } from "../lib/labels";
+import { MEMBER_COLORS } from "@shared/types";
 
-const SWATCHES = [
-  "#6366f1",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#0ea5e9",
-  "#8b5cf6",
-  "#ef4444",
-  "#14b8a6",
-];
 
 const PRONOUN_OPTIONS = ["", "she/her", "he/him", "they/them"];
 
@@ -78,7 +69,7 @@ export default function ProfilePage() {
     nickname: "",
     pronouns: "",
     birthday: "",
-    color: SWATCHES[0],
+    color: MEMBER_COLORS[0],
     notifyBudgetAlerts: true,
     notifyWeeklyDigest: true,
   });
@@ -179,7 +170,7 @@ export default function ProfilePage() {
 
               <Field label="Your colour" hint="Used for your avatar and highlights.">
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {SWATCHES.map((c) => (
+                  {MEMBER_COLORS.map((c) => (
                     <button
                       key={c}
                       type="button"

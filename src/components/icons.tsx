@@ -176,6 +176,24 @@ export function ReceiptIcon({ className = "", size = 20 }: IconProps) {
   );
 }
 
+export function CheckIcon({ className = "", size = 18 }: IconProps) {
+  return (
+    <svg {...base(size, className)} strokeWidth={2.6}>
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+export function BroomIcon({ className = "", size = 20 }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path d="M15 4l5 5" />
+      <path d="M13.5 6.5 17.5 10.5l-6 6H5l2.5-4 6-6Z" />
+      <path d="M5 16.5 3 21l4.5-2" />
+    </svg>
+  );
+}
+
 export function LinkIcon({ className = "", size = 16 }: IconProps) {
   return (
     <svg {...base(size, className)}>
