@@ -38,6 +38,12 @@ export function toMember(row: UserRow): Member {
     status: row.status,
     invitedAt: row.invitedAt,
     createdAt: row.createdAt,
+    nickname: row.nickname,
+    pronouns: row.pronouns,
+    birthday: row.birthday,
+    avatarVersion: row.avatarVersion,
+    notifyBudgetAlerts: row.notifyBudgetAlerts,
+    notifyWeeklyDigest: row.notifyWeeklyDigest,
   };
 }
 

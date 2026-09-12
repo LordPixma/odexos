@@ -16,6 +16,22 @@ export interface Member {
   status: MemberStatus; // "invited" until an emailed invite is accepted
   invitedAt: string | null;
   createdAt: string;
+  // --- personalisation ---
+  nickname: string | null;
+  pronouns: string | null;
+  birthday: string | null; // YYYY-MM-DD
+  avatarVersion: number; // 0 = no photo uploaded
+  notifyBudgetAlerts: boolean;
+  notifyWeeklyDigest: boolean;
+}
+
+/** Photo URL for a member, or undefined when they haven't uploaded one. */
+export function memberAvatarUrl(
+  member: Pick<Member, "id" | "avatarVersion">,
+): string | undefined {
+  return member.avatarVersion > 0
+    ? `/api/members/${member.id}/avatar?v=${member.avatarVersion}`
+    : undefined;
 }
 
 /** Public details shown on the accept-invite page (no session required). */

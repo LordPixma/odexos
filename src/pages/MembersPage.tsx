@@ -8,7 +8,7 @@ import {
 } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import {
-  Avatar,
+  MemberAvatar,
   Button,
   Card,
   ErrorBanner,
@@ -20,15 +20,10 @@ import {
   Select,
 } from "../components/ui";
 import { EditIcon, PlusIcon, TrashIcon, UsersIcon } from "../components/icons";
+import AvatarPicker from "../components/AvatarPicker";
 import { ApiError } from "../lib/api";
+import { ROLE_LABELS } from "../lib/labels";
 import type { Member, Role } from "@shared/types";
-
-const ROLE_LABELS: Record<Role, string> = {
-  owner: "Owner",
-  adult: "Adult",
-  child: "Child",
-  member: "Member",
-};
 
 const SWATCHES = [
   "#6366f1",
@@ -48,6 +43,9 @@ interface FormState {
   email: string;
   role: Role;
   color: string;
+  nickname: string;
+  pronouns: string;
+  birthday: string;
 }
 
 function emptyForm(): FormState {
@@ -56,8 +54,13 @@ function emptyForm(): FormState {
     email: "",
     role: "adult",
     color: SWATCHES[0],
+    nickname: "",
+    pronouns: "",
+    birthday: "",
   };
 }
+
+const PRONOUN_OPTIONS = ["", "she/her", "he/him", "they/them"];
 
 export default function MembersPage() {
   const { auth } = useAuth();
@@ -87,7 +90,15 @@ export default function MembersPage() {
   }
   function openEdit(m: Member) {
     setEditing(m);
-    setForm({ name: m.name, email: m.email, role: m.role, color: m.color });
+    setForm({
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      color: m.color,
+      nickname: m.nickname ?? "",
+      pronouns: m.pronouns ?? "",
+      birthday: m.birthday ?? "",
+    });
     create.reset();
     update.reset();
     setModalOpen(true);
@@ -105,7 +116,15 @@ export default function MembersPage() {
     e.preventDefault();
     if (editing) {
       update.mutate(
-        { id: editing.id, name: form.name, color: form.color, role: form.role },
+        {
+          id: editing.id,
+          name: form.name,
+          color: form.color,
+          role: form.role,
+          nickname: form.nickname || null,
+          pronouns: form.pronouns || null,
+          birthday: form.birthday || null,
+        },
         { onSuccess: () => setModalOpen(false) },
       );
     } else {
@@ -167,17 +186,27 @@ export default function MembersPage() {
             const canEdit = canManage || isSelf;
             return (
               <Card key={m.id} className="flex items-center gap-4 p-5">
-                <Avatar name={m.name} color={m.color} size={48} />
+                <MemberAvatar member={m} size={48} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="truncate font-semibold text-white">
                       {m.name}
                     </span>
+                    {m.nickname && (
+                      <span className="truncate text-sm text-slate-400">
+                        “{m.nickname}”
+                      </span>
+                    )}
                     {isSelf && (
                       <span className="chip bg-white/[0.06] text-slate-400">You</span>
                     )}
                   </div>
-                  <div className="truncate text-sm text-slate-400">{m.email}</div>
+                  <div className="truncate text-sm text-slate-400">
+                    {m.email}
+                    {m.pronouns && (
+                      <span className="text-slate-500"> · {m.pronouns}</span>
+                    )}
+                  </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <span
                       className="chip"
@@ -256,6 +285,11 @@ export default function MembersPage() {
         title={editing ? "Edit member" : "Invite family member"}
       >
         <form onSubmit={submit} className="space-y-4">
+          {editing && (
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <AvatarPicker member={editing} size={72} />
+            </div>
+          )}
           <Field label="Name">
             <Input
               value={form.name}
@@ -264,6 +298,37 @@ export default function MembersPage() {
               required
             />
           </Field>
+          {editing && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Nickname">
+                <Input
+                  value={form.nickname}
+                  onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+                  placeholder="Optional"
+                  maxLength={60}
+                />
+              </Field>
+              <Field label="Pronouns">
+                <Select
+                  value={form.pronouns}
+                  onChange={(e) => setForm({ ...form, pronouns: e.target.value })}
+                >
+                  {PRONOUN_OPTIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {p || "Prefer not to say"}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Birthday" hint="Powers birthday reminders.">
+                <Input
+                  type="date"
+                  value={form.birthday}
+                  onChange={(e) => setForm({ ...form, birthday: e.target.value })}
+                />
+              </Field>
+            </div>
+          )}
           {!editing && (
             <Field
               label="Email"

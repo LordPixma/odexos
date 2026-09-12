@@ -76,6 +76,12 @@ auth.post("/register", async (c) => {
     invitedAt: null,
     resetTokenHash: null,
     resetExpiresAt: null,
+    nickname: null,
+    pronouns: null,
+    birthday: null,
+    avatarVersion: 0,
+    notifyBudgetAlerts: true,
+    notifyWeeklyDigest: true,
     createdAt: new Date().toISOString(),
   });
   return c.json<AuthState>({ member, family }, 201);

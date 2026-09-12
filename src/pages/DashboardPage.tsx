@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
-import { Avatar, Card, EmptyState, PageLoader } from "../components/ui";
+import { Card, EmptyState, MemberAvatar, PageLoader } from "../components/ui";
 import {
   CalendarIcon,
   ChartIcon,
@@ -370,7 +370,7 @@ export default function DashboardPage() {
             <div className="flex -space-x-2.5">
               {shownMembers.map((m) => (
                 <span key={m.id} className="rounded-full ring-2 ring-white/40">
-                  <Avatar name={m.name} color={m.color} size={38} />
+                  <MemberAvatar member={m} size={38} />
                 </span>
               ))}
               {extraMembers > 0 && (
@@ -571,7 +571,7 @@ export default function DashboardPage() {
                         {a.location ? ` · ${a.location}` : ""}
                       </div>
                     </div>
-                    {member && <Avatar name={member.name} color={member.color} size={24} />}
+                    {member && <MemberAvatar member={member} size={24} />}
                   </div>
                 );
               })}
@@ -618,7 +618,7 @@ export default function DashboardPage() {
                         {!a.allDay && ` · ${formatTime(a.startsAt)}`}
                       </div>
                     </div>
-                    {member && <Avatar name={member.name} color={member.color} size={24} />}
+                    {member && <MemberAvatar member={member} size={24} />}
                   </div>
                 );
               })}
@@ -638,7 +638,7 @@ export default function DashboardPage() {
                 return (
                   <div key={item.key} className="flex items-start gap-3">
                     {item.who ? (
-                      <Avatar name={item.who.name} color={item.who.color} size={30} />
+                      <MemberAvatar member={item.who} size={30} />
                     ) : (
                       <span
                         className="mt-0.5 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-xs"

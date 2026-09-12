@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth, useLogout } from "../lib/auth";
-import { Avatar } from "./ui";
+import { MemberAvatar } from "./ui";
 import NotificationsBell from "./NotificationsBell";
 import { LogoutIcon } from "./icons";
 
@@ -47,14 +47,18 @@ export default function AppLayout() {
           {auth && (
             <div className="flex items-center gap-2">
               <NotificationsBell compact />
-              <div className="hidden items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 sm:flex">
-                <Avatar name={auth.member.name} color={auth.member.color} size={26} />
-                <div className="leading-tight">
+              <Link
+                to="/profile"
+                title="My profile"
+                className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-2 py-1.5 transition hover:bg-white/[0.08] sm:px-2.5"
+              >
+                <MemberAvatar member={auth.member} size={26} />
+                <div className="hidden leading-tight sm:block">
                   <div className="text-xs font-semibold text-slate-100">
-                    {auth.member.name.split(" ")[0]}
+                    {auth.member.nickname || auth.member.name.split(" ")[0]}
                   </div>
                 </div>
-              </div>
+              </Link>
               <button
                 onClick={() => logout.mutate()}
                 className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"

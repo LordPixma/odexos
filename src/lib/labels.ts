@@ -1,4 +1,16 @@
-import type { AccountType, ActivityCategory, ExpenseCategory } from "@shared/types";
+import type {
+  AccountType,
+  ActivityCategory,
+  ExpenseCategory,
+  Role,
+} from "@shared/types";
+
+export const ROLE_LABELS: Record<Role, string> = {
+  owner: "Owner",
+  adult: "Adult",
+  child: "Child",
+  member: "Member",
+};
 
 // A cohesive, slightly-muted categorical palette that sits well with the
 // jade/honey brand.

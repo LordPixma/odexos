@@ -14,7 +14,7 @@ import {
   useUpdateAccount,
 } from "../lib/queries";
 import {
-  Avatar,
+  MemberAvatar,
   Button,
   Card,
   EmptyState,
@@ -380,7 +380,7 @@ export default function FinancePage() {
                         <>
                           {a.institution && <span>·</span>}
                           <span className="inline-flex items-center gap-1">
-                            <Avatar name={owner.name} color={owner.color} size={16} />
+                            <MemberAvatar member={owner} size={16} />
                             {owner.name}
                           </span>
                         </>

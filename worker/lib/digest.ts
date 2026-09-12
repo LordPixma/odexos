@@ -278,8 +278,13 @@ export async function sendDigest(
   }
 
   const content = renderDigest(await gatherDigest(db, familyId));
+  // Only active members who haven't opted out of the digest.
   const members = await db.query.users.findMany({
-    where: eq(users.familyId, familyId),
+    where: and(
+      eq(users.familyId, familyId),
+      eq(users.status, "active"),
+      eq(users.notifyWeeklyDigest, true),
+    ),
     columns: { email: true },
   });
   const to = members.map((m) => m.email).filter(Boolean);

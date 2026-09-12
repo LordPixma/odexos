@@ -6,6 +6,7 @@ import type {
   TextareaHTMLAttributes,
 } from "react";
 import { initials } from "../lib/format";
+import { memberAvatarUrl, type Member } from "@shared/types";
 
 export function Spinner({ className = "" }: { className?: string }) {
   return (
@@ -218,11 +219,25 @@ export function Avatar({
   name,
   color,
   size = 36,
+  src,
 }: {
   name: string;
   color: string;
   size?: number;
+  /** Profile photo URL; falls back to coloured initials when absent. */
+  src?: string;
 }) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        title={name}
+        className="inline-block shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   return (
     <span
       className="inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
@@ -236,6 +251,24 @@ export function Avatar({
     >
       {initials(name) || "?"}
     </span>
+  );
+}
+
+/** Avatar for a family member — shows their photo when they've uploaded one. */
+export function MemberAvatar({
+  member,
+  size = 36,
+}: {
+  member: Pick<Member, "id" | "name" | "color" | "avatarVersion">;
+  size?: number;
+}) {
+  return (
+    <Avatar
+      name={member.name}
+      color={member.color}
+      size={size}
+      src={memberAvatarUrl(member)}
+    />
   );
 }
 

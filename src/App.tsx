@@ -11,6 +11,7 @@ import TransactionsPage from "./pages/TransactionsPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import FinancePage from "./pages/FinancePage";
 import MembersPage from "./pages/MembersPage";
+import ProfilePage from "./pages/ProfilePage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="budgets" element={<BudgetsPage />} />
           <Route path="finance" element={<FinancePage />} />
           <Route path="family" element={<MembersPage />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       ) : (
