@@ -11,6 +11,7 @@ import type {
   BankConnection,
   Budget,
   BudgetsOverview,
+  CalendarSubscription,
   CategoryRule,
   Chore,
   ChoresOverview,
@@ -664,5 +665,23 @@ export function useUpdateFamilySettings() {
 export function useSendDigest() {
   return useMutation({
     mutationFn: () => api.post<{ sent: number }>("/family/digest/send"),
+  });
+}
+
+// ---- Calendar subscription ----
+export function useCalendarSubscription() {
+  return useQuery({
+    queryKey: ["calendar-subscription"],
+    queryFn: () => api.get<CalendarSubscription>("/calendar/subscription"),
+    staleTime: Infinity, // the URL only changes when it's deliberately rotated
+  });
+}
+
+export function useRotateCalendarLink() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api.post<CalendarSubscription>("/calendar/subscription/rotate"),
+    onSuccess: (data) => qc.setQueryData(["calendar-subscription"], data),
   });
 }

@@ -20,6 +20,7 @@ import dashboardRoutes from "./routes/dashboard";
 import householdRoutes from "./routes/household";
 import choreRoutes from "./routes/chores";
 import notificationRoutes from "./routes/notifications";
+import calendarRoutes, { calendarFeed } from "./routes/calendar";
 import familyRoutes from "./routes/family";
 
 const app = new Hono<AppEnv>();
@@ -40,6 +41,10 @@ app.get("/api/finance/connections/callback", bankCallback);
 // BEFORE the auth gate (the invitee has no session yet).
 app.route("/api/invites", inviteRoutes);
 
+// Public ICS calendar feed — secured by the unguessable token in the path, so
+// it sits BEFORE the auth gate (a calendar client has no session cookie).
+app.get("/api/calendar/feed/:token", calendarFeed);
+
 // Everything below this line requires a valid session.
 app.use("/api/*", requireAuth);
 app.route("/api/members", memberRoutes);
@@ -49,6 +54,7 @@ app.route("/api/finance", financeRoutes);
 app.route("/api/household", householdRoutes);
 app.route("/api/chores", choreRoutes);
 app.route("/api/notifications", notificationRoutes);
+app.route("/api/calendar", calendarRoutes);
 app.route("/api/family", familyRoutes);
 app.route("/api/dashboard", dashboardRoutes);
 

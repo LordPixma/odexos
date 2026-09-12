@@ -472,6 +472,11 @@ export interface NotificationsResponse {
   unread: number;
 }
 
+/** The family's ICS subscribe URL (the token in it is the credential). */
+export interface CalendarSubscription {
+  url: string;
+}
+
 export interface FamilySettings {
   id: string;
   name: string;

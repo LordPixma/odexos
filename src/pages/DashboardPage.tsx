@@ -7,6 +7,7 @@ import {
   CalendarIcon,
   ChartIcon,
   ClipboardIcon,
+  ClockIcon,
   ReceiptIcon,
   TargetIcon,
   UsersIcon,
@@ -288,10 +289,17 @@ export default function DashboardPage() {
     grad: [string, string];
   }[] = [
     {
-      to: "/activities",
-      label: "Activities",
+      to: "/calendar",
+      label: "Calendar",
       icon: <CalendarIcon size={20} />,
       grad: ["#3b82f6", "#22d3ee"],
+      stat: "Month view · subscribe",
+    },
+    {
+      to: "/activities",
+      label: "Activities",
+      icon: <ClockIcon size={20} />,
+      grad: ["#0ea5e9", "#2563eb"],
       stat: `${data.todayActivities.length} today · ${data.upcomingActivities.length} soon`,
     },
     {
@@ -405,7 +413,7 @@ export default function DashboardPage() {
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           Explore
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {navItems.map((n) => (
             <NavCard key={n.to} {...n} />
           ))}
@@ -599,7 +607,7 @@ export default function DashboardPage() {
             title="Upcoming family events"
             subtitle="Next 7 days"
             action={
-              <Link to="/activities" className="text-xs font-semibold text-brand-300 hover:text-brand-200">
+              <Link to="/calendar" className="text-xs font-semibold text-brand-300 hover:text-brand-200">
                 Calendar
               </Link>
             }

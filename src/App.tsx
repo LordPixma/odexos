@@ -13,6 +13,7 @@ import FinancePage from "./pages/FinancePage";
 import MembersPage from "./pages/MembersPage";
 import ProfilePage from "./pages/ProfilePage";
 import ChoresPage from "./pages/ChoresPage";
+import CalendarPage from "./pages/CalendarPage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -37,6 +38,7 @@ export default function App() {
       {auth ? (
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
           <Route path="activities" element={<ActivitiesPage />} />
           <Route path="household" element={<HouseholdPage />} />
           <Route path="chores" element={<ChoresPage />} />

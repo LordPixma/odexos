@@ -21,6 +21,9 @@ export const families = sqliteTable("families", {
   lastDigestWeek: text("last_digest_week"), // Monday (YYYY-MM-DD) of last send
   // YYYY-MM-DD we last ran birthday reminders for, so they send once a day.
   lastBirthdayDate: text("last_birthday_date"),
+  // Secret that authenticates the public ICS feed. Null until someone asks for
+  // the subscribe link; rotating it invalidates every existing subscription.
+  calendarToken: text("calendar_token").unique(),
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 
