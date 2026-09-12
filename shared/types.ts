@@ -313,12 +313,25 @@ export interface DashboardData {
   recentTransactions: Transaction[]; // latest synced bank activity
   recentExpenses: Expense[]; // latest manually-logged expenses (family feed)
   spendTrend: DailySpend[]; // last 14 days, combined spend + income per day
+  upcomingBirthdays: UpcomingBirthday[]; // next 90 days, soonest first
 }
 
 export interface DailySpend {
   date: string; // YYYY-MM-DD
   spendCents: number;
   incomeCents: number;
+}
+
+/** A member's next birthday, for the dashboard countdown. */
+export interface UpcomingBirthday {
+  memberId: string;
+  name: string;
+  nickname: string | null;
+  color: string;
+  avatarVersion: number;
+  date: string; // YYYY-MM-DD of the next occurrence
+  daysUntil: number; // 0 = today
+  turning: number | null; // age they turn, when the birth year is known
 }
 
 // ---- Shared lists & meal planning ----

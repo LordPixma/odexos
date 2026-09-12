@@ -1,0 +1,1 @@
+ALTER TABLE `families` ADD `last_birthday_date` text;

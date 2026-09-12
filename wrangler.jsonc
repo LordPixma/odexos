@@ -29,7 +29,9 @@
   ],
   // Refresh linked bank balances every 6 hours; send the family digest Monday 07:00 UTC.
   "triggers": {
-    "crons": ["0 */6 * * *", "0 7 * * 1"]
+    // 6-hourly: bank sync + budget alerts. Mon 07:00: weekly digest.
+    // Daily 07:30: birthday reminders.
+    "crons": ["0 */6 * * *", "0 7 * * 1", "30 7 * * *"]
   },
   "vars": {
     "APP_NAME": "OdexOS",

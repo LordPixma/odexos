@@ -15,6 +15,7 @@ import {
   toTransaction,
 } from "../lib/serialize";
 import { expandActivities } from "../lib/recurrence";
+import { upcomingBirthdays } from "../lib/birthdays";
 import {
   buildBudgetsOverview,
   computeSpendByCategory,
@@ -208,6 +209,7 @@ app.get("/", async (c) => {
     recentTransactions,
     recentExpenses,
     spendTrend,
+    upcomingBirthdays: upcomingBirthdays(memberRows, now).slice(0, 4),
   };
   return c.json(data);
 });

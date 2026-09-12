@@ -19,6 +19,8 @@ export const families = sqliteTable("families", {
     .notNull()
     .default(true),
   lastDigestWeek: text("last_digest_week"), // Monday (YYYY-MM-DD) of last send
+  // YYYY-MM-DD we last ran birthday reminders for, so they send once a day.
+  lastBirthdayDate: text("last_birthday_date"),
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 

@@ -6,8 +6,10 @@ import { createDb } from "./db/client";
 import { syncConnection } from "./lib/bank";
 import { checkBudgetAlerts } from "./lib/notifications";
 import { sendDigest } from "./lib/digest";
+import { sendBirthdayReminders } from "./lib/birthdays";
 
 const WEEKLY_DIGEST_CRON = "0 7 * * 1"; // Monday 07:00 UTC
+const BIRTHDAY_CRON = "30 7 * * *"; // Daily 07:30 UTC
 import authRoutes from "./routes/auth";
 import inviteRoutes from "./routes/invites";
 import memberRoutes from "./routes/members";
@@ -70,6 +72,19 @@ async function scheduled(
   _ctx: ExecutionContext,
 ): Promise<void> {
   const db = createDb(env.DB);
+
+  // Birthday reminders (daily, once per family per day).
+  if (controller.cron === BIRTHDAY_CRON) {
+    const birthdayFamilies = await db.query.families.findMany();
+    for (const fam of birthdayFamilies) {
+      try {
+        await sendBirthdayReminders(db, env, fam.id);
+      } catch (err) {
+        console.error(`Birthday reminders failed for ${fam.id}:`, err);
+      }
+    }
+    return;
+  }
 
   // Weekly family digest (Monday morning).
   if (controller.cron === WEEKLY_DIGEST_CRON) {
