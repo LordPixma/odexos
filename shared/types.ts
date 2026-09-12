@@ -293,7 +293,16 @@ export interface DashboardData {
   expenseByCategory: { category: ExpenseCategory; amountCents: number }[];
   finance: FinanceSummary;
   budgetAlerts: BudgetProgress[]; // budgets at warning/over this month
+  budgets: BudgetProgress[]; // all category budgets with progress this month
   recentTransactions: Transaction[]; // latest synced bank activity
+  recentExpenses: Expense[]; // latest manually-logged expenses (family feed)
+  spendTrend: DailySpend[]; // last 14 days, combined spend + income per day
+}
+
+export interface DailySpend {
+  date: string; // YYYY-MM-DD
+  spendCents: number;
+  incomeCents: number;
 }
 
 // ---- Shared lists & meal planning ----

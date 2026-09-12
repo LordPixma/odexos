@@ -105,8 +105,8 @@ function ListCard({
     <Card className="flex flex-col p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-slate-900">{list.name}</span>
-          <span className="chip bg-slate-100 text-slate-500">
+          <span className="font-semibold text-white">{list.name}</span>
+          <span className="chip bg-white/[0.06] text-slate-400">
             {LIST_TYPE_LABELS[list.type]}
           </span>
         </div>
@@ -116,7 +116,7 @@ function ListCard({
               const name = prompt("Rename list", list.name);
               if (name && name.trim()) renameList.mutate({ id: list.id, name: name.trim() });
             }}
-            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-md p-1.5 text-slate-500 hover:bg-white/10 hover:text-slate-200"
             aria-label="Rename"
           >
             <EditIcon />
@@ -125,7 +125,7 @@ function ListCard({
             onClick={() => {
               if (confirm(`Delete "${list.name}"?`)) deleteList.mutate(list.id);
             }}
-            className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+            className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
             aria-label="Delete list"
           >
             <TrashIcon />
@@ -135,7 +135,7 @@ function ListCard({
 
       <div className="flex-1 space-y-1">
         {list.items.length === 0 ? (
-          <p className="py-2 text-sm text-slate-400">Nothing here yet.</p>
+          <p className="py-2 text-sm text-slate-500">Nothing here yet.</p>
         ) : (
           list.items.map((item) => {
             const owner = item.assignedTo ? memberById.get(item.assignedTo) : undefined;
@@ -147,11 +147,11 @@ function ListCard({
                   onChange={() =>
                     updateItem.mutate({ id: item.id, done: !item.done })
                   }
-                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  className="h-4 w-4 shrink-0 rounded border-white/10 text-brand-300 focus:ring-brand-500"
                 />
                 <span
                   className={`min-w-0 flex-1 truncate text-sm ${
-                    item.done ? "text-slate-400 line-through" : "text-slate-700"
+                    item.done ? "text-slate-500 line-through" : "text-slate-200"
                   }`}
                 >
                   {item.text}
@@ -159,7 +159,7 @@ function ListCard({
                 {owner && <Avatar name={owner.name} color={owner.color} size={20} />}
                 <button
                   onClick={() => deleteItem.mutate(item.id)}
-                  className="rounded p-1 text-slate-300 opacity-0 transition hover:text-red-600 group-hover:opacity-100"
+                  className="rounded p-1 text-slate-300 opacity-0 transition hover:text-red-300 group-hover:opacity-100"
                   aria-label="Delete item"
                 >
                   <TrashIcon size={14} />
@@ -180,7 +180,7 @@ function ListCard({
           <select
             value={assignee}
             onChange={(e) => setAssignee(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-600"
+            className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2 text-sm text-slate-300"
             aria-label="Assign to"
           >
             <option value="">Anyone</option>
@@ -199,7 +199,7 @@ function ListCard({
       {doneCount > 0 && (
         <button
           onClick={() => clearDone.mutate(list.id)}
-          className="mt-2 self-start text-xs font-medium text-slate-400 hover:text-slate-600"
+          className="mt-2 self-start text-xs font-medium text-slate-500 hover:text-slate-300"
         >
           Clear {doneCount} done
         </button>
@@ -375,13 +375,13 @@ function MealsView() {
           <Button variant="secondary" onClick={() => setWeekStart(addDays(weekStart, -7))}>
             ←
           </Button>
-          <span className="text-sm font-semibold text-slate-700">{rangeLabel}</span>
+          <span className="text-sm font-semibold text-slate-200">{rangeLabel}</span>
           <Button variant="secondary" onClick={() => setWeekStart(addDays(weekStart, 7))}>
             →
           </Button>
           <button
             onClick={() => setWeekStart(mondayOf(new Date()))}
-            className="ml-1 text-sm font-medium text-brand-600 hover:underline"
+            className="ml-1 text-sm font-medium text-brand-300 hover:underline"
           >
             This week
           </button>
@@ -405,11 +405,11 @@ function MealsView() {
                 }`}
               >
                 <div className="mb-2 flex items-baseline justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     {DOW.format(parseDate(date))}
                   </span>
                   <span
-                    className={`text-sm font-bold ${isToday ? "text-brand-600" : "text-slate-700"}`}
+                    className={`text-sm font-bold ${isToday ? "text-brand-300" : "text-slate-200"}`}
                   >
                     {parseDate(date).getDate()}
                   </span>
@@ -419,18 +419,18 @@ function MealsView() {
                     <button
                       key={m.id}
                       onClick={() => openEdit(m)}
-                      className="group block w-full rounded-md bg-slate-50 px-2 py-1 text-left hover:bg-slate-100"
+                      className="group block w-full rounded-md bg-white/[0.04] px-2 py-1 text-left hover:bg-white/10"
                     >
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                         {MEAL_SLOT_LABELS[m.slot]}
                       </div>
-                      <div className="truncate text-sm text-slate-800">{m.title}</div>
+                      <div className="truncate text-sm text-slate-100">{m.title}</div>
                     </button>
                   ))}
                 </div>
                 <button
                   onClick={() => openCreate(date)}
-                  className="mt-2 flex items-center justify-center gap-1 rounded-md border border-dashed border-slate-300 py-1 text-xs font-medium text-slate-400 hover:border-brand-400 hover:text-brand-600"
+                  className="mt-2 flex items-center justify-center gap-1 rounded-md border border-dashed border-white/10 py-1 text-xs font-medium text-slate-500 hover:border-brand-400 hover:text-brand-300"
                 >
                   <PlusIcon size={14} /> Add
                 </button>
@@ -501,7 +501,7 @@ function MealsView() {
                     });
                   }
                 }}
-                className="text-sm font-medium text-red-600 hover:underline"
+                className="text-sm font-medium text-red-300 hover:underline"
               >
                 Delete
               </button>
@@ -536,13 +536,13 @@ export default function HouseholdPage() {
         subtitle="Shared lists and the week's meal plan."
       />
 
-      <div className="inline-flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
+      <div className="inline-flex rounded-lg bg-white/[0.06] p-1 text-sm font-medium">
         {(["lists", "meals"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`rounded-md px-4 py-1.5 capitalize transition ${
-              tab === t ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+              tab === t ? "bg-white/10 text-white shadow-sm" : "text-slate-400"
             }`}
           >
             {t === "lists" ? "Lists" : "Meal plan"}

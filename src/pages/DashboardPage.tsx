@@ -1,23 +1,8 @@
 import { Link } from "react-router-dom";
 import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
-import {
-  Avatar,
-  Card,
-  EmptyState,
-  PageLoader,
-  SectionHead,
-  StatTile,
-} from "../components/ui";
-import {
-  CalendarIcon,
-  ClipboardIcon,
-  ClockIcon,
-  MapPinIcon,
-  ReceiptIcon,
-  TargetIcon,
-} from "../components/icons";
-import { ACTIVITY_COLORS, EXPENSE_COLORS } from "../lib/labels";
+import { Avatar, Card, EmptyState, PageLoader } from "../components/ui";
+import { ACTIVITY_COLORS } from "../lib/labels";
 import {
   formatDate,
   formatFullDate,
@@ -29,170 +14,171 @@ import {
 import {
   ACTIVITY_CATEGORY_LABELS,
   EXPENSE_CATEGORY_LABELS,
-  type Activity,
-  type ExpenseCategory,
-  type Member,
+  type BudgetProgress,
+  type DailySpend,
 } from "@shared/types";
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
-}
+const STATUS_RING: Record<string, [string, string]> = {
+  ok: ["#34d399", "#059669"],
+  warning: ["#fbbf24", "#d97706"],
+  over: ["#fb7185", "#e11d48"],
+};
 
 // ---------------------------------------------------------------------------
-// Donut chart (SVG) for spend-by-category
+// Progress ring
 // ---------------------------------------------------------------------------
-function Donut({
-  slices,
-  size = 168,
-  stroke = 22,
+let ringSeq = 0;
+function ProgressRing({
+  percent,
+  from,
+  to,
+  size = 96,
+  stroke = 9,
+  center,
 }: {
-  slices: { category: ExpenseCategory; amountCents: number }[];
+  percent: number;
+  from: string;
+  to: string;
   size?: number;
   stroke?: number;
+  center: string;
 }) {
+  const id = `ring-${ringSeq++}`;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const total = slices.reduce((s, x) => s + x.amountCents, 0);
+  const p = Math.max(0, Math.min(percent, 1));
   const cx = size / 2;
-
-  let acc = 0;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-      {/* track */}
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={from} />
+          <stop offset="100%" stopColor={to} />
+        </linearGradient>
+      </defs>
+      <circle cx={cx} cy={cx} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
       <circle
         cx={cx}
         cy={cx}
         r={r}
         fill="none"
-        stroke="rgba(0,0,0,0.06)"
+        stroke={`url(#${id})`}
         strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={`${p * c} ${c}`}
+        transform={`rotate(-90 ${cx} ${cx})`}
       />
-      {total > 0 &&
-        slices.map((s) => {
-          const frac = s.amountCents / total;
-          const len = frac * c;
-          const seg = (
-            <circle
-              key={s.category}
-              cx={cx}
-              cy={cx}
-              r={r}
-              fill="none"
-              stroke={EXPENSE_COLORS[s.category]}
-              strokeWidth={stroke}
-              strokeDasharray={`${Math.max(len - 2.5, 0.5)} ${c}`}
-              strokeDashoffset={-acc}
-              strokeLinecap="butt"
-              transform={`rotate(-90 ${cx} ${cx})`}
-            />
-          );
-          acc += len;
-          return seg;
-        })}
+      <text
+        x="50%"
+        y="50%"
+        dominantBaseline="central"
+        textAnchor="middle"
+        className="fill-white font-display text-[15px] font-bold"
+      >
+        {center}
+      </text>
     </svg>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Quick action tile
+// Area chart (spend + income over 14 days)
 // ---------------------------------------------------------------------------
-function QuickAction({
-  to,
-  icon,
-  label,
-  hint,
-  tint,
-}: {
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-  hint: string;
-  tint: string;
-}) {
+function smoothPath(pts: [number, number][]): string {
+  if (pts.length < 2) return pts.length ? `M ${pts[0][0]} ${pts[0][1]}` : "";
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2[0]} ${p2[1]}`;
+  }
+  return d;
+}
+
+function SpendArea({ trend }: { trend: DailySpend[] }) {
+  const W = 320;
+  const H = 120;
+  const pad = 10;
+  const max = Math.max(
+    1,
+    ...trend.map((d) => Math.max(d.spendCents, d.incomeCents)),
+  );
+  const xy = (v: number, i: number): [number, number] => [
+    trend.length > 1 ? (i / (trend.length - 1)) * W : W / 2,
+    H - pad - (v / max) * (H - 2 * pad),
+  ];
+  const spendPts = trend.map((d, i) => xy(d.spendCents, i));
+  const incomePts = trend.map((d, i) => xy(d.incomeCents, i));
+  const spendLine = smoothPath(spendPts);
+  const incomeLine = smoothPath(incomePts);
+  const spendArea = `${spendLine} L ${W} ${H} L 0 ${H} Z`;
+
   return (
-    <Link
-      to={to}
-      className="card card-hover group flex items-center gap-3 p-4"
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      className="h-28 w-full"
     >
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-        style={{ backgroundColor: `${tint}1a`, color: tint }}
-      >
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <div className="font-semibold text-slate-900">{label}</div>
-        <div className="truncate text-xs text-slate-500">{hint}</div>
-      </div>
-    </Link>
+      <defs>
+        <linearGradient id="spend-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="spend-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#60a5fa" />
+          <stop offset="100%" stopColor="#22d3ee" />
+        </linearGradient>
+      </defs>
+      <path d={spendArea} fill="url(#spend-fill)" />
+      <path
+        d={incomeLine}
+        fill="none"
+        stroke="#34d399"
+        strokeWidth={2}
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+        opacity={0.9}
+      />
+      <path
+        d={spendLine}
+        fill="none"
+        stroke="url(#spend-line)"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Schedule timeline row
-// ---------------------------------------------------------------------------
-function TimelineRow({
-  activity,
-  member,
-  last,
-  showDay,
+function CardHead({
+  title,
+  subtitle,
+  action,
 }: {
-  activity: Activity;
-  member?: Member;
-  last: boolean;
-  showDay?: boolean;
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
 }) {
-  const color = ACTIVITY_COLORS[activity.category];
   return (
-    <div className="flex gap-3">
-      <div className="flex w-14 shrink-0 flex-col items-end pt-0.5">
-        <span className="text-sm font-semibold tabular-nums text-slate-700">
-          {activity.allDay ? "All day" : formatTime(activity.startsAt)}
-        </span>
-        {showDay && (
-          <span className="text-[11px] text-slate-400">
-            {relativeDay(activity.startsAt)}
-          </span>
-        )}
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h2 className="font-display text-base font-semibold text-white">{title}</h2>
+        {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
       </div>
-      <div className="relative flex flex-col items-center">
-        <span
-          className="z-10 mt-1.5 h-3 w-3 rounded-full ring-4 ring-white"
-          style={{ backgroundColor: color }}
-        />
-        {!last && <span className="w-px flex-1 bg-slate-200" />}
-      </div>
-      <div className={`min-w-0 flex-1 ${last ? "pb-0" : "pb-5"}`}>
-        <div className="flex items-center gap-2">
-          <span className="truncate font-medium text-slate-900">
-            {activity.title}
-          </span>
-          <span
-            className="chip shrink-0"
-            style={{ backgroundColor: `${color}1a`, color }}
-          >
-            {ACTIVITY_CATEGORY_LABELS[activity.category]}
-          </span>
-        </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
-          {activity.location && (
-            <span className="inline-flex items-center gap-1">
-              <MapPinIcon size={13} /> {activity.location}
-            </span>
-          )}
-          {member && (
-            <span className="inline-flex items-center gap-1.5">
-              <Avatar name={member.name} color={member.color} size={18} />
-              {member.name.split(" ")[0]}
-            </span>
-          )}
-        </div>
-      </div>
+      {action}
     </div>
   );
+}
+
+function ringColors(b: BudgetProgress): [string, string] {
+  return STATUS_RING[b.status] ?? STATUS_RING.ok;
 }
 
 export default function DashboardPage() {
@@ -203,62 +189,91 @@ export default function DashboardPage() {
 
   const memberById = new Map(data.members.map((m) => [m.id, m]));
   const firstName = auth?.member.name.split(" ")[0] ?? "there";
-  const spendTotal = data.expenseByCategory.reduce((s, x) => s + x.amountCents, 0);
-  const topCats = data.expenseByCategory.slice(0, 6);
-  const shownMembers = data.members.slice(0, 6);
+  const shownMembers = data.members.slice(0, 5);
   const extraMembers = data.members.length - shownMembers.length;
+
+  const incomeVsSpend =
+    data.monthIncomeCents > 0
+      ? Math.min(1, data.monthSpendCents / data.monthIncomeCents)
+      : data.monthSpendCents > 0
+        ? 1
+        : 0;
+
+  // Budget rings: top 3 category budgets by usage; fall back to spend mix.
+  const ringBudgets = [...data.budgets]
+    .sort((a, b) => b.percent - a.percent)
+    .slice(0, 3);
+
+  // Family feed: recent logged expenses + bank transactions, newest first.
+  const feedItems = [
+    ...data.recentExpenses.map((e) => ({
+      key: `e-${e.id}`,
+      date: e.spentAt,
+      who: e.paidBy ? memberById.get(e.paidBy) : undefined,
+      verb: "logged",
+      label: e.description,
+      amountCents: -e.amountCents,
+      currency: e.currency,
+    })),
+    ...data.recentTransactions.map((t) => ({
+      key: `t-${t.id}`,
+      date: t.date,
+      who: undefined,
+      verb: t.direction === "credit" ? "received" : "spent at",
+      label: t.merchant || t.description,
+      amountCents:
+        t.direction === "credit" ? Math.abs(t.amountCents) : -Math.abs(t.amountCents),
+      currency: t.currency,
+    })),
+  ]
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .slice(0, 6);
 
   return (
     <div className="space-y-6">
-      {/* ---- Hero banner ---- */}
+      {/* ---- Gradient welcome hero ---- */}
       <div
-        className="relative overflow-hidden rounded-3xl px-6 py-7 text-white shadow-lift sm:px-8"
+        className="relative overflow-hidden rounded-2xl border border-white/10 px-6 py-6 sm:px-8"
         style={{
-          backgroundColor: "#0c6e4d",
           backgroundImage:
-            "radial-gradient(30rem 30rem at 8% -20%, rgba(67,190,139,0.55), transparent 60%), radial-gradient(26rem 26rem at 108% 130%, rgba(233,162,52,0.4), transparent 60%)",
+            "linear-gradient(110deg, #1d4ed8 0%, #0e7490 48%, #0f8a5f 100%)",
         }}
       >
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          className="pointer-events-none absolute inset-0 opacity-20"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.7) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
+              "radial-gradient(30rem 30rem at 90% -40%, rgba(255,255,255,0.5), transparent 60%)",
           }}
         />
-        <div className="relative flex flex-wrap items-end justify-between gap-5">
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-white/70">
-              {formatFullDate(new Date().toISOString())}
-            </p>
-            <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-[2rem]">
-              {greeting()}, {firstName} 👋
+            <h1 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              Welcome back, {firstName}!
             </h1>
-            <p className="mt-1.5 max-w-md text-sm text-white/80">
+            <p className="mt-1 text-sm text-white/75">
+              {formatFullDate(new Date().toISOString())} ·{" "}
               {data.todayActivities.length > 0
-                ? `You have ${data.todayActivities.length} thing${
-                    data.todayActivities.length === 1 ? "" : "s"
-                  } on today across ${data.family.name}.`
-                : `Nothing scheduled today — a calm day for ${data.family.name}.`}
+                ? `${data.todayActivities.length} on today`
+                : "clear today"}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="flex -space-x-2.5">
               {shownMembers.map((m) => (
-                <span key={m.id} className="rounded-full ring-2 ring-white/80">
+                <span key={m.id} className="rounded-full ring-2 ring-white/40">
                   <Avatar name={m.name} color={m.color} size={38} />
                 </span>
               ))}
               {extraMembers > 0 && (
-                <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white/20 text-xs font-semibold ring-2 ring-white/80 backdrop-blur">
+                <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white/20 text-xs font-semibold text-white ring-2 ring-white/40 backdrop-blur">
                   +{extraMembers}
                 </span>
               )}
             </div>
             <Link
               to="/family"
-              className="hidden rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur transition hover:bg-white/25 sm:block"
+              className="hidden rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25 sm:block"
             >
               Family
             </Link>
@@ -266,328 +281,283 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ---- Quick actions ---- */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <QuickAction
-          to="/activities"
-          icon={<CalendarIcon />}
-          label="Add activity"
-          hint="School run, club, plan"
-          tint="#2f74e0"
-        />
-        <QuickAction
-          to="/expenses"
-          icon={<ReceiptIcon />}
-          label="Log expense"
-          hint="Track family spend"
-          tint="#0f9d6b"
-        />
-        <QuickAction
-          to="/household"
-          icon={<ClipboardIcon />}
-          label="Lists & meals"
-          hint="Plan the week"
-          tint="#7c5cf5"
-        />
-        <QuickAction
-          to="/budgets"
-          icon={<TargetIcon />}
-          label="Budgets"
-          hint="Stay on target"
-          tint="#d9841a"
-        />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* ---- Left: finances + schedule ---- */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Finances */}
-          <Card className="p-5">
-            <SectionHead
-              icon={<ReceiptIcon size={18} />}
-              tint="#0f8a5f"
-              title="Finances"
-              subtitle="This month"
-              action={
-                <Link
-                  to="/finance"
-                  className="text-sm font-medium text-brand-600 hover:underline"
-                >
-                  Details
-                </Link>
-              }
-            />
-            <div className="grid items-center gap-6 sm:grid-cols-[auto,1fr]">
-              <div className="relative mx-auto">
-                <Donut slices={topCats} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                    Spent
-                  </span>
-                  <span className="font-display text-xl font-bold text-slate-900">
-                    {formatMoneyCompact(data.monthSpendCents, data.currency)}
-                  </span>
-                  {data.monthIncomeCents > 0 && (
-                    <span className="mt-0.5 text-[11px] font-medium text-emerald-600">
-                      +{formatMoneyCompact(data.monthIncomeCents, data.currency)} in
-                    </span>
-                  )}
-                </div>
+      {/* ---- Top row: finances / budgets rings / today ---- */}
+      <div className="grid gap-5 lg:grid-cols-3">
+        {/* Finances overview */}
+        <Card className="p-5">
+          <CardHead
+            title="Family finances"
+            subtitle="This month"
+            action={
+              <Link to="/finance" className="text-xs font-semibold text-brand-300 hover:text-brand-200">
+                Details
+              </Link>
+            }
+          />
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                Net worth
               </div>
-              <div className="space-y-2">
-                {topCats.length === 0 ? (
-                  <EmptyState icon="💷" title="No spending logged yet" />
-                ) : (
-                  topCats.map(({ category, amountCents }) => (
-                    <div key={category} className="flex items-center gap-2.5 text-sm">
-                      <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: EXPENSE_COLORS[category] }}
-                      />
-                      <span className="flex-1 text-slate-600">
-                        {EXPENSE_CATEGORY_LABELS[category]}
-                      </span>
-                      <span className="font-medium tabular-nums text-slate-800">
-                        {formatMoney(amountCents, data.currency)}
-                      </span>
-                      <span className="w-9 text-right text-xs tabular-nums text-slate-400">
-                        {spendTotal
-                          ? Math.round((amountCents / spendTotal) * 100)
-                          : 0}
-                        %
-                      </span>
-                    </div>
-                  ))
-                )}
+              <div className="font-display text-3xl font-bold text-white">
+                {formatMoney(data.finance.netWorthCents, data.currency)}
               </div>
             </div>
-
-            {/* Posture strip */}
-            <div className="mt-5 grid grid-cols-3 gap-3 border-t border-black/[0.06] pt-4">
-              {[
-                { label: "Assets", value: data.finance.totalAssetsCents, color: "#0f9d6b" },
-                { label: "Liabilities", value: data.finance.totalLiabilitiesCents, color: "#e5484d" },
-                { label: "Net worth", value: data.finance.netWorthCents, color: data.finance.netWorthCents >= 0 ? "#0f8a5f" : "#e5484d" },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                    {s.label}
-                  </div>
-                  <div
-                    className="font-display text-lg font-bold tabular-nums"
-                    style={{ color: s.color }}
-                  >
-                    {formatMoneyCompact(s.value, data.currency)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Today's schedule */}
-          <Card className="p-5">
-            <SectionHead
-              icon={<CalendarIcon size={18} />}
-              tint="#2f74e0"
-              title="Today's schedule"
-              subtitle={formatFullDate(new Date().toISOString())}
-              action={
-                <Link
-                  to="/activities"
-                  className="text-sm font-medium text-brand-600 hover:underline"
-                >
-                  View all
-                </Link>
-              }
-            />
-            {data.todayActivities.length === 0 ? (
-              <EmptyState
-                icon="🗓️"
-                title="Nothing on today"
-                description="Enjoy the quiet — or add something from the Activities tab."
-              />
-            ) : (
-              <div>
-                {data.todayActivities.map((a, i) => (
-                  <TimelineRow
-                    key={a.id}
-                    activity={a}
-                    member={a.memberId ? memberById.get(a.memberId) : undefined}
-                    last={i === data.todayActivities.length - 1}
-                  />
-                ))}
+            <div className="text-right text-xs">
+              <div className="text-slate-400">Spent vs in</div>
+              <div className="font-semibold text-slate-200">
+                {formatMoneyCompact(data.monthSpendCents, data.currency)}
+                <span className="text-slate-500">
+                  {" "}
+                  / {formatMoneyCompact(data.monthIncomeCents, data.currency)}
+                </span>
               </div>
-            )}
-          </Card>
-        </div>
-
-        {/* ---- Right rail ---- */}
-        <div className="space-y-6">
-          {/* At a glance */}
-          <div className="grid grid-cols-2 gap-3">
-            <StatTile
-              label="Today"
-              value={`${data.todayActivities.length}`}
-              hint={data.todayActivities.length === 1 ? "activity" : "activities"}
-              tint="#2f74e0"
-            />
-            <StatTile
-              label="Next 7 days"
-              value={`${data.upcomingActivities.length}`}
-              hint="upcoming"
-              tint="#7c5cf5"
-            />
-            <StatTile
-              label="Family"
-              value={`${data.members.length}`}
-              hint={data.members.length === 1 ? "member" : "members"}
-              tint="#0f8a5f"
-            />
-            <StatTile
-              label="Accounts"
-              value={`${data.finance.accountCount}`}
-              hint="linked"
-              tint="#d9841a"
+            </div>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-sky-400 to-cyan-400"
+              style={{ width: `${incomeVsSpend * 100}%` }}
             />
           </div>
 
-          {/* Budget alerts */}
+          <div className="mt-3">
+            <SpendArea trend={data.spendTrend} />
+          </div>
+
+          <div className="mt-3 space-y-1 border-t border-white/[0.07] pt-3">
+            {(data.recentTransactions.length > 0
+              ? data.recentTransactions.slice(0, 3).map((t) => ({
+                  key: t.id,
+                  label: t.merchant || t.description,
+                  sub: formatDate(t.date),
+                  amount: `${t.direction === "credit" ? "+" : "−"}${formatMoney(Math.abs(t.amountCents), t.currency)}`,
+                  color: t.direction === "credit" ? "#34d399" : "#f8fafc",
+                }))
+              : data.expenseByCategory.slice(0, 3).map((e) => ({
+                  key: e.category,
+                  label: EXPENSE_CATEGORY_LABELS[e.category],
+                  sub: "this month",
+                  amount: `−${formatMoney(e.amountCents, data.currency)}`,
+                  color: "#f8fafc",
+                }))
+            ).map((row) => (
+              <div key={row.key} className="flex items-center justify-between gap-3 py-1">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-200">
+                    {row.label}
+                  </div>
+                  <div className="text-[11px] text-slate-500">{row.sub}</div>
+                </div>
+                <span
+                  className="shrink-0 text-sm font-semibold tabular-nums"
+                  style={{ color: row.color }}
+                >
+                  {row.amount}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Budget rings */}
+        <Card className="p-5">
+          <CardHead
+            title="Budgets"
+            subtitle="Used this month"
+            action={
+              <Link to="/budgets" className="text-xs font-semibold text-brand-300 hover:text-brand-200">
+                Manage
+              </Link>
+            }
+          />
+          {ringBudgets.length === 0 ? (
+            <EmptyState icon="🎯" title="No budgets set" />
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {ringBudgets.map((b) => {
+                const [from, to] = ringColors(b);
+                return (
+                  <div key={b.id} className="flex flex-col items-center text-center">
+                    <ProgressRing
+                      percent={b.percent}
+                      from={from}
+                      to={to}
+                      center={`${Math.round(b.percent * 100)}%`}
+                    />
+                    <div className="mt-1.5 truncate text-xs font-medium text-slate-200">
+                      {b.category ? EXPENSE_CATEGORY_LABELS[b.category] : "Overall"}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {formatMoneyCompact(b.spentCents, data.currency)} /{" "}
+                      {formatMoneyCompact(b.amountCents, data.currency)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {data.budgetAlerts.length > 0 && (
-            <Card className="p-5">
-              <SectionHead
-                icon={<TargetIcon size={18} />}
-                tint="#e0930f"
-                title="Budget alerts"
-                action={
-                  <Link
-                    to="/budgets"
-                    className="text-sm font-medium text-brand-600 hover:underline"
-                  >
-                    Manage
-                  </Link>
-                }
-              />
-              <div className="space-y-3">
-                {data.budgetAlerts.map((a) => {
-                  const color = a.status === "over" ? "#e5484d" : "#e0930f";
-                  const label = a.category
-                    ? EXPENSE_CATEGORY_LABELS[a.category]
-                    : "Overall budget";
-                  return (
-                    <div key={a.id}>
-                      <div className="mb-1 flex items-center justify-between text-sm">
-                        <span className="text-slate-700">{label}</span>
-                        <span className="font-semibold tabular-nums" style={{ color }}>
-                          {Math.round(a.percent * 100)}%
-                        </span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-sand-100">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${Math.min(a.percent, 1) * 100}%`,
-                            backgroundColor: color,
-                          }}
-                        />
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        {formatMoney(a.spentCents, data.currency)} of{" "}
-                        {formatMoney(a.amountCents, data.currency)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
+            <div className="mt-4 space-y-1.5 border-t border-white/[0.07] pt-3">
+              {data.budgetAlerts.slice(0, 2).map((a) => {
+                const color = a.status === "over" ? "#fb7185" : "#fbbf24";
+                return (
+                  <div key={a.id} className="flex items-center gap-2 text-xs">
+                    <span style={{ color }}>⚠</span>
+                    <span className="text-slate-300">
+                      {a.category ? EXPENSE_CATEGORY_LABELS[a.category] : "Overall"}{" "}
+                      at {Math.round(a.percent * 100)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           )}
+        </Card>
 
-          {/* Coming up */}
-          <Card className="p-5">
-            <SectionHead
-              icon={<ClockIcon size={18} />}
-              tint="#7c5cf5"
-              title="Coming up"
-              subtitle="Next 7 days"
-            />
-            {data.upcomingActivities.length === 0 ? (
-              <EmptyState icon="✨" title="No upcoming plans yet" />
-            ) : (
-              <div className="space-y-3">
-                {data.upcomingActivities.slice(0, 5).map((a) => {
-                  const color = ACTIVITY_COLORS[a.category];
-                  const member = a.memberId ? memberById.get(a.memberId) : undefined;
-                  return (
-                    <div key={a.id} className="flex items-center gap-3">
-                      <span
-                        className="h-9 w-1.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-slate-900">
-                          {a.title}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {relativeDay(a.startsAt)}
-                          {!a.allDay && ` · ${formatTime(a.startsAt)}`}
-                        </div>
-                      </div>
-                      {member && (
-                        <Avatar name={member.name} color={member.color} size={26} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-          {/* Recent activity */}
-          {data.recentTransactions.length > 0 && (
-            <Card className="p-5">
-              <SectionHead
-                icon={<ReceiptIcon size={18} />}
-                tint="#0f8a5f"
-                title="Recent activity"
-                subtitle="From your banks"
-                action={
-                  <Link
-                    to="/transactions"
-                    className="text-sm font-medium text-brand-600 hover:underline"
-                  >
-                    All
-                  </Link>
-                }
-              />
-              <div className="space-y-1">
-                {data.recentTransactions.slice(0, 5).map((t) => {
-                  const credit = t.direction === "credit";
-                  return (
-                    <div
-                      key={t.id}
-                      className="flex items-center justify-between gap-3 rounded-lg px-1.5 py-2 transition hover:bg-sand-100"
+        {/* Today's schedule */}
+        <Card className="p-5">
+          <CardHead
+            title="Today"
+            subtitle={`${data.todayActivities.length} scheduled`}
+            action={
+              <Link to="/activities" className="text-xs font-semibold text-brand-300 hover:text-brand-200">
+                All
+              </Link>
+            }
+          />
+          {data.todayActivities.length === 0 ? (
+            <EmptyState icon="🗓️" title="Nothing on today" />
+          ) : (
+            <div className="space-y-3">
+              {data.todayActivities.slice(0, 5).map((a) => {
+                const color = ACTIVITY_COLORS[a.category];
+                const member = a.memberId ? memberById.get(a.memberId) : undefined;
+                return (
+                  <div key={a.id} className="flex items-center gap-3">
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold tabular-nums text-white"
+                      style={{ backgroundColor: `${color}2e`, color }}
                     >
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-slate-800">
-                          {t.merchant || t.description}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          {formatDate(t.date)}
-                        </div>
+                      {a.allDay ? "—" : formatTime(a.startsAt).replace(/\s?[AP]M/i, "")}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-slate-100">
+                        {a.title}
                       </div>
-                      <div
-                        className="shrink-0 text-sm font-semibold tabular-nums"
-                        style={{ color: credit ? "#0f9d6b" : "#1c2b24" }}
-                      >
-                        {credit ? "+" : "−"}
-                        {formatMoney(Math.abs(t.amountCents), t.currency)}
+                      <div className="truncate text-[11px] text-slate-500">
+                        {ACTIVITY_CATEGORY_LABELS[a.category]}
+                        {a.location ? ` · ${a.location}` : ""}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
+                    {member && <Avatar name={member.name} color={member.color} size={24} />}
+                  </div>
+                );
+              })}
+            </div>
           )}
-        </div>
+        </Card>
+      </div>
+
+      {/* ---- Bottom row: upcoming events / family feed ---- */}
+      <div className="grid gap-5 lg:grid-cols-3">
+        {/* Coming up */}
+        <Card className="p-5 lg:col-span-2">
+          <CardHead
+            title="Upcoming family events"
+            subtitle="Next 7 days"
+            action={
+              <Link to="/activities" className="text-xs font-semibold text-brand-300 hover:text-brand-200">
+                Calendar
+              </Link>
+            }
+          />
+          {data.upcomingActivities.length === 0 ? (
+            <EmptyState icon="✨" title="No upcoming plans yet" />
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {data.upcomingActivities.slice(0, 6).map((a) => {
+                const color = ACTIVITY_COLORS[a.category];
+                const member = a.memberId ? memberById.get(a.memberId) : undefined;
+                return (
+                  <div
+                    key={a.id}
+                    className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.03] p-3"
+                  >
+                    <span
+                      className="h-9 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-slate-100">
+                        {a.title}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {relativeDay(a.startsAt)}
+                        {!a.allDay && ` · ${formatTime(a.startsAt)}`}
+                      </div>
+                    </div>
+                    {member && <Avatar name={member.name} color={member.color} size={24} />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
+        {/* Family feed */}
+        <Card className="p-5">
+          <CardHead title="Family feed" subtitle="Recent activity" />
+          {feedItems.length === 0 ? (
+            <EmptyState icon="📡" title="No recent activity" />
+          ) : (
+            <div className="space-y-3">
+              {feedItems.map((item) => {
+                const credit = item.amountCents > 0;
+                return (
+                  <div key={item.key} className="flex items-start gap-3">
+                    {item.who ? (
+                      <Avatar name={item.who.name} color={item.who.color} size={30} />
+                    ) : (
+                      <span
+                        className="mt-0.5 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-xs"
+                        style={{
+                          backgroundColor: credit
+                            ? "rgba(52,211,153,0.16)"
+                            : "rgba(148,163,184,0.14)",
+                        }}
+                      >
+                        {credit ? "💷" : "🧾"}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm text-slate-300">
+                        {item.who && (
+                          <span className="font-semibold text-slate-100">
+                            {item.who.name.split(" ")[0]}{" "}
+                          </span>
+                        )}
+                        {item.verb}{" "}
+                        <span className="font-medium text-slate-100">{item.label}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {formatDate(item.date)}
+                      </div>
+                    </div>
+                    <span
+                      className="shrink-0 text-sm font-semibold tabular-nums"
+                      style={{ color: credit ? "#34d399" : "#e2e8f0" }}
+                    >
+                      {credit ? "+" : "−"}
+                      {formatMoney(Math.abs(item.amountCents), item.currency)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );

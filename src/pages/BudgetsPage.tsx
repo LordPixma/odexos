@@ -31,9 +31,9 @@ import {
 const OVERALL = "__overall__";
 
 const STATUS: Record<BudgetStatus, { color: string; label: string }> = {
-  ok: { color: "#0f766e", label: "On track" },
-  warning: { color: "#b45309", label: "Approaching limit" },
-  over: { color: "#dc2626", label: "Over budget" },
+  ok: { color: "#10b981", label: "On track" },
+  warning: { color: "#f59e0b", label: "Approaching limit" },
+  over: { color: "#f43f5e", label: "Over budget" },
 };
 
 function currentMonth(): string {
@@ -64,7 +64,7 @@ function BudgetBar({
     <div className="group p-4">
       <div className="mb-1.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className={`text-slate-900 ${emphasise ? "font-bold" : "font-medium"}`}>
+          <span className={`text-white ${emphasise ? "font-bold" : "font-medium"}`}>
             {budgetLabel(bp.category)}
           </span>
           <span
@@ -75,8 +75,8 @@ function BudgetBar({
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">
+          <span className="text-sm text-slate-300">
+            <span className="font-semibold text-white">
               {formatMoney(bp.spentCents, currency)}
             </span>{" "}
             / {formatMoney(bp.amountCents, currency)}
@@ -84,14 +84,14 @@ function BudgetBar({
           <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
             <button
               onClick={onEdit}
-              className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              className="rounded-md p-1.5 text-slate-500 hover:bg-white/10 hover:text-slate-200"
               aria-label="Edit"
             >
               <EditIcon />
             </button>
             <button
               onClick={onDelete}
-              className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+              className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
               aria-label="Delete"
             >
               <TrashIcon />
@@ -99,7 +99,7 @@ function BudgetBar({
           </div>
         </div>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2.5 overflow-hidden rounded-full bg-white/[0.06]">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${pct}%`, backgroundColor: s.color }}
@@ -213,7 +213,7 @@ export default function BudgetsPage() {
                 style={{ borderColor: `${s.color}55`, backgroundColor: `${s.color}12` }}
               >
                 <span style={{ color: s.color }}>⚠</span>
-                <span className="text-slate-700">
+                <span className="text-slate-200">
                   <span className="font-semibold">{budgetLabel(a.category)}</span>{" "}
                   {over ? "is over budget" : "is close to its limit"} —{" "}
                   {formatMoney(a.spentCents, currency)} of{" "}
@@ -243,7 +243,7 @@ export default function BudgetsPage() {
         <div className="space-y-6">
           {overall && (
             <Card>
-              <div className="flex items-center gap-2 border-b border-slate-100 px-4 pt-4 text-sm font-semibold text-slate-500">
+              <div className="flex items-center gap-2 border-b border-white/10 px-4 pt-4 text-sm font-semibold text-slate-400">
                 <TargetIcon size={16} /> Overall
               </div>
               <BudgetBar
@@ -259,7 +259,7 @@ export default function BudgetsPage() {
           )}
 
           {categories.length > 0 && (
-            <Card className="divide-y divide-slate-100">
+            <Card className="divide-y divide-white/10">
               {categories.map((bp) => (
                 <BudgetBar
                   key={bp.id}

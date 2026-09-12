@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html,
@@ -14,34 +14,35 @@ body,
 
 body {
   margin: 0;
-  color: #1c2b24;
+  color: #e6eaf3;
   font-family: theme("fontFamily.sans");
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Warm paper canvas with soft brand/honey glows in the corners. */
-  background-color: #f6f4ee;
+  /* Deep navy canvas with faint blue / teal / jade glows in the corners. */
+  background-color: #0a0d17;
   background-image:
-    radial-gradient(60rem 60rem at 110% -10%, rgba(15, 138, 95, 0.08), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 10%, rgba(233, 162, 52, 0.07), transparent 55%);
+    radial-gradient(55rem 55rem at 100% -10%, rgba(59, 130, 246, 0.12), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 5%, rgba(6, 182, 212, 0.1), transparent 55%),
+    radial-gradient(45rem 45rem at 60% 120%, rgba(15, 138, 95, 0.12), transparent 60%);
   background-attachment: fixed;
 }
 
 ::selection {
-  background: theme("colors.brand.200");
-  color: theme("colors.brand.900");
+  background: rgba(59, 130, 246, 0.35);
+  color: #f8fafc;
 }
 
 /* Subtle, unobtrusive scrollbars. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(28, 43, 36, 0.18) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: rgba(28, 43, 36, 0.18);
+  background-color: rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
   border: 3px solid transparent;
   background-clip: content-box;
@@ -55,29 +56,30 @@ body {
 }
 
 @layer components {
+  /* Glassy dark surface. */
   .card {
-    @apply rounded-2xl border border-black/[0.06] bg-white shadow-soft;
+    @apply rounded-2xl border border-white/[0.07] bg-surface/80 shadow-glass backdrop-blur-sm;
   }
   .card-hover {
-    @apply transition-shadow hover:shadow-lift;
+    @apply transition-all hover:border-white/[0.14] hover:bg-surface;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/50 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700;
+    @apply btn bg-brand-500 text-white shadow-[0_6px_20px_-8px_rgba(31,164,113,0.7)] hover:bg-brand-400;
   }
   .btn-secondary {
-    @apply btn border border-black/[0.08] bg-white text-slate-700 hover:bg-sand-100;
+    @apply btn border border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.09];
   }
   .btn-danger {
-    @apply btn border border-red-200 bg-white text-red-600 hover:bg-red-50;
+    @apply btn border border-red-500/25 bg-red-500/10 text-red-300 hover:bg-red-500/20;
   }
   .input {
-    @apply w-full rounded-xl border border-black/[0.1] bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-[0_1px_1px_rgba(20,30,25,0.03)] transition placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/25;
+    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-sm text-slate-100 transition placeholder:text-slate-500 focus:border-brand-400/70 focus:outline-none focus:ring-2 focus:ring-brand-400/25;
   }
   .label {
-    @apply mb-1.5 block text-sm font-medium text-slate-600;
+    @apply mb-1.5 block text-sm font-medium text-slate-400;
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold;

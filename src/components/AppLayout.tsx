@@ -36,14 +36,14 @@ const NAV: NavItem[] = [
 function Logo() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 font-display text-lg font-bold text-white shadow-sm">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 via-cyan-400 to-brand-500 font-display text-lg font-bold text-white shadow-[0_6px_18px_-6px_rgba(6,182,212,0.7)]">
         O
       </span>
       <div className="leading-tight">
-        <div className="font-display text-base font-bold tracking-tight text-slate-900">
+        <div className="font-display text-base font-bold tracking-tight text-white">
           OdexOS
         </div>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600/80">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-300/80">
           Family HQ
         </div>
       </div>
@@ -63,21 +63,25 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           className={({ isActive }) =>
             `group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${
               isActive
-                ? "bg-brand-600/10 text-brand-800"
-                : "text-slate-500 hover:bg-black/[0.04] hover:text-slate-900"
+                ? "bg-white/[0.06] text-white"
+                : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"
             }`
           }
         >
           {({ isActive }) => (
             <>
               <span
-                className={`absolute left-0 top-1/2 hidden h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand-600 transition-opacity lg:block ${
+                className={`absolute left-0 top-1/2 hidden h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-brand-300 to-cyan-400 transition-opacity lg:block ${
                   isActive ? "opacity-100" : "opacity-0"
                 }`}
               />
               <Icon
                 size={19}
-                className={isActive ? "text-brand-600" : "text-slate-400 group-hover:text-slate-600"}
+                className={
+                  isActive
+                    ? "text-brand-300"
+                    : "text-slate-500 group-hover:text-slate-300"
+                }
               />
               <span>{label}</span>
             </>
@@ -95,7 +99,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-full lg:flex">
       {/* Sidebar (desktop) */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-black/5 bg-white/70 p-4 backdrop-blur-xl lg:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.06] bg-[#0b0f1a]/80 p-4 backdrop-blur-xl lg:flex">
         <div className="px-2 py-2">
           <Logo />
         </div>
@@ -103,14 +107,14 @@ export default function AppLayout() {
           <NavLinks />
         </div>
         {auth && (
-          <div className="mt-4 border-t border-black/5 pt-4">
+          <div className="mt-4 border-t border-white/[0.06] pt-4">
             <div className="flex items-center gap-3 px-2">
               <Avatar name={auth.member.name} color={auth.member.color} />
               <div className="min-w-0 flex-1 leading-tight">
-                <div className="truncate text-sm font-semibold text-slate-800">
+                <div className="truncate text-sm font-semibold text-slate-100">
                   {auth.member.name}
                 </div>
-                <div className="truncate text-xs text-slate-400">
+                <div className="truncate text-xs text-slate-500">
                   {auth.family.name}
                 </div>
               </div>
@@ -120,7 +124,7 @@ export default function AppLayout() {
             </div>
             <button
               onClick={() => logout.mutate()}
-              className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 hover:bg-black/[0.04] hover:text-slate-800"
+              className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"
             >
               <LogoutIcon /> Sign out
             </button>
@@ -129,7 +133,7 @@ export default function AppLayout() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-20 border-b border-black/5 bg-white/70 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#0b0f1a]/85 backdrop-blur-xl lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <Logo />
           {auth && (
@@ -137,7 +141,7 @@ export default function AppLayout() {
               <NotificationsBell compact />
               <button
                 onClick={() => logout.mutate()}
-                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 hover:bg-black/[0.04]"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-400 hover:bg-white/[0.04]"
               >
                 <LogoutIcon /> Sign out
               </button>

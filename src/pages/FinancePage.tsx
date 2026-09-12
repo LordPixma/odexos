@@ -72,25 +72,25 @@ function ConnectionRow({ connection }: { connection: BankConnection }) {
   const disconnect = useDisconnectBank();
   return (
     <div className="flex flex-wrap items-center gap-3 p-4">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300">
         <BankIcon />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-white">
             {connection.displayName}
           </span>
           {connection.status === "error" ? (
-            <span className="chip bg-red-100 text-red-700">Needs attention</span>
+            <span className="chip bg-red-500/15 text-red-300">Needs attention</span>
           ) : (
-            <span className="chip bg-emerald-100 text-emerald-700">Connected</span>
+            <span className="chip bg-emerald-500/15 text-emerald-300">Connected</span>
           )}
-          <span className="chip bg-slate-100 text-slate-500">
+          <span className="chip bg-white/[0.06] text-slate-400">
             {connection.accountCount} account
             {connection.accountCount === 1 ? "" : "s"}
           </span>
         </div>
-        <div className="mt-0.5 text-xs text-slate-500">
+        <div className="mt-0.5 text-xs text-slate-400">
           {connection.status === "error" && connection.lastError
             ? connection.lastError
             : connection.lastSyncedAt
@@ -116,7 +116,7 @@ function ConnectionRow({ connection }: { connection: BankConnection }) {
             )
               disconnect.mutate(connection.id);
           }}
-          className="rounded-md p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+          className="rounded-md p-2 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
           aria-label="Disconnect"
         >
           <TrashIcon />
@@ -240,8 +240,8 @@ export default function FinancePage() {
         <div
           className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
             banner.kind === "ok"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-700"
+              ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+              : "border-red-500/25 bg-red-500/10 text-red-300"
           }`}
         >
           <span>{banner.text}</span>
@@ -313,7 +313,7 @@ export default function FinancePage() {
             }
           />
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-white/10">
             {connections.map((conn) => (
               <ConnectionRow key={conn.id} connection={conn} />
             ))}
@@ -328,7 +328,7 @@ export default function FinancePage() {
 
       {/* Accounts */}
       <div>
-        <h2 className="mb-3 font-display text-lg font-semibold text-slate-900">
+        <h2 className="mb-3 font-display text-lg font-semibold text-white">
           All accounts
         </h2>
         {isLoading ? (
@@ -345,7 +345,7 @@ export default function FinancePage() {
             }
           />
         ) : (
-          <Card className="divide-y divide-slate-100">
+          <Card className="divide-y divide-white/10">
             {(accounts ?? []).map((a) => {
               const color = ACCOUNT_COLORS[a.type];
               const owner = a.ownerMemberId
@@ -361,7 +361,7 @@ export default function FinancePage() {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-slate-900">{a.name}</span>
+                      <span className="font-medium text-white">{a.name}</span>
                       <span
                         className="chip"
                         style={{ backgroundColor: `${color}1a`, color }}
@@ -369,12 +369,12 @@ export default function FinancePage() {
                         {ACCOUNT_TYPE_LABELS[a.type]}
                       </span>
                       {synced && (
-                        <span className="chip bg-brand-50 text-brand-600">
+                        <span className="chip bg-brand-500/15 text-brand-300">
                           <RefreshIcon size={12} /> Synced
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
                       {a.institution && <span>{a.institution}</span>}
                       {owner && (
                         <>
@@ -388,8 +388,8 @@ export default function FinancePage() {
                     </div>
                   </div>
                   <div
-                    className="font-semibold"
-                    style={{ color: isLiability ? "#dc2626" : "#0f172a" }}
+                    className="font-semibold tabular-nums"
+                    style={{ color: isLiability ? "#f87171" : "#f1f5f9" }}
                   >
                     {isLiability ? "−" : ""}
                     {formatMoney(a.balanceCents, a.currency)}
@@ -397,7 +397,7 @@ export default function FinancePage() {
                   <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
                     <button
                       onClick={() => openEdit(a)}
-                      className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-white/10 hover:text-slate-200"
                       aria-label="Edit"
                     >
                       <EditIcon />
@@ -407,7 +407,7 @@ export default function FinancePage() {
                         onClick={() => {
                           if (confirm(`Delete "${a.name}"?`)) remove.mutate(a.id);
                         }}
-                        className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
                         aria-label="Delete"
                       >
                         <TrashIcon />

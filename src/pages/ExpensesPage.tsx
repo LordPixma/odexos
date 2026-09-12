@@ -154,10 +154,10 @@ export default function ExpensesPage() {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Total
           </div>
-          <div className="font-display text-2xl font-bold text-brand-700">
+          <div className="font-display text-2xl font-bold text-brand-300">
             {formatMoney(total, currency)}
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function ExpensesPage() {
           </Button>}
         />
       ) : (
-        <Card className="divide-y divide-slate-100">
+        <Card className="divide-y divide-white/10">
           {(expenses ?? []).map((e) => {
             const color = EXPENSE_COLORS[e.category];
             const payer = e.paidBy ? memberById.get(e.paidBy) : undefined;
@@ -188,10 +188,10 @@ export default function ExpensesPage() {
                   {EXPENSE_CATEGORY_LABELS[e.category].slice(0, 2)}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium text-slate-900">
+                  <div className="truncate font-medium text-white">
                     {e.description}
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
+                  <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
                     <span>{EXPENSE_CATEGORY_LABELS[e.category]}</span>
                     <span>·</span>
                     <span>{formatDate(e.spentAt)}</span>
@@ -206,13 +206,13 @@ export default function ExpensesPage() {
                     )}
                   </div>
                 </div>
-                <div className="font-semibold text-slate-900">
+                <div className="font-semibold text-white">
                   {formatMoney(e.amountCents, e.currency)}
                 </div>
                 <div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
                   <button
                     onClick={() => openEdit(e)}
-                    className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    className="rounded-md p-1.5 text-slate-500 hover:bg-white/10 hover:text-slate-200"
                     aria-label="Edit"
                   >
                     <EditIcon />
@@ -221,7 +221,7 @@ export default function ExpensesPage() {
                     onClick={() => {
                       if (confirm(`Delete "${e.description}"?`)) remove.mutate(e.id);
                     }}
-                    className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
                     aria-label="Delete"
                   >
                     <TrashIcon />
