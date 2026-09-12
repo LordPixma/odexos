@@ -9,6 +9,7 @@ import {
   badRequest,
   optionalBool,
   optionalEnum,
+  optionalDate,
   optionalIsoDateTime,
   optionalString,
   requireEnum,
@@ -18,14 +19,6 @@ import {
 import { ACTIVITY_CATEGORIES, RECURRENCE_RULES } from "@shared/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-// Optional YYYY-MM-DD (recurrence end date).
-function optionalDate(value: unknown, field: string): string | null {
-  if (value === undefined || value === null || value === "") return null;
-  const s = requireString(value, field);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) badRequest(`${field} must be YYYY-MM-DD`);
-  return s;
-}
 
 const app = new Hono<AppEnv>();
 

@@ -96,10 +96,26 @@ export function optionalIsoDateTime(
   return requireIsoDateTime(value, field);
 }
 
-/** Validates a YYYY-MM-DD date string. */
+/**
+ * Validates a YYYY-MM-DD date string, and that the date actually exists.
+ *
+ * The shape check alone isn't enough, and neither is Date.parse: it happily
+ * accepts "1990-02-29" and "2026-04-31", rolling them over to the 1st of the
+ * next month. A stored non-date then surfaces as a broken day in the calendar
+ * feed, so the only reliable test is that it round-trips unchanged.
+ */
 export function requireDate(value: unknown, field: string): string {
   const s = requireString(value, field);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) badRequest(`${field} must be YYYY-MM-DD`);
-  if (Number.isNaN(Date.parse(s))) badRequest(`${field} is not a real date`);
+  const d = new Date(`${s}T00:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s) {
+    badRequest(`${field} is not a real date`);
+  }
   return s;
+}
+
+/** As `requireDate`, but empty/absent becomes null. */
+export function optionalDate(value: unknown, field: string): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  return requireDate(value, field);
 }

@@ -81,6 +81,17 @@ function dateStamp(ymd: string): string {
   return ymd.replace(/-/g, "");
 }
 
+/**
+ * Is this a date that actually exists? Input is validated on the way in, but a
+ * single bad row predating that check would emit a malformed VEVENT — and some
+ * clients reject the entire feed over one, so such rows are skipped instead.
+ */
+function realDay(ymd: string | null | undefined): ymd is string {
+  if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return false;
+  const d = new Date(`${ymd}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === ymd;
+}
+
 /** DTEND for an all-day event is exclusive, so it lands on the next day. */
 function nextDay(ymd: string): string {
   const d = new Date(`${ymd}T00:00:00Z`);
@@ -143,6 +154,7 @@ export function buildFamilyFeed(opts: BuildFeedOptions): string {
   l.add("X-PUBLISHED-TTL", "PT1H");
 
   for (const a of activities) {
+    if (Number.isNaN(new Date(a.startsAt).getTime())) continue;
     // Expanded occurrences carry "<baseId>@<date>"; the series itself is what
     // the RRULE describes, so only base activities reach here.
     l.raw("BEGIN:VEVENT");
@@ -160,7 +172,7 @@ export function buildFamilyFeed(opts: BuildFeedOptions): string {
 
     const rule = ACTIVITY_RRULE[a.recurrence];
     if (rule) {
-      const until = a.recurrenceUntil
+      const until = realDay(a.recurrenceUntil)
         ? `;UNTIL=${dateStamp(a.recurrenceUntil)}T235959Z`
         : "";
       l.add("RRULE", `${rule}${until}`);
@@ -183,7 +195,7 @@ export function buildFamilyFeed(opts: BuildFeedOptions): string {
   }
 
   for (const m of members) {
-    if (!m.birthday) continue;
+    if (!realDay(m.birthday)) continue;
     const name = m.nickname ?? m.name;
     l.raw("BEGIN:VEVENT");
     l.add("UID", `birthday-${m.id}@odexos`);
@@ -198,6 +210,7 @@ export function buildFamilyFeed(opts: BuildFeedOptions): string {
   }
 
   for (const ch of chores) {
+    if (!realDay(ch.dueDate)) continue;
     const owner = who(ch.assignedTo);
     l.raw("BEGIN:VEVENT");
     l.add("UID", `chore-${ch.id}@odexos`);

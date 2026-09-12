@@ -9,6 +9,7 @@ import { toMember } from "../lib/serialize";
 import type { AppEnv } from "../lib/types";
 import {
   badRequest,
+  optionalDate,
   optionalString,
   requireEmail,
   requireEnum,
@@ -163,9 +164,7 @@ members.patch("/:id", async (c) => {
   if (body.pronouns !== undefined)
     updates.pronouns = optionalString(body.pronouns, "Pronouns", { max: 40 });
   if (body.birthday !== undefined) {
-    const b = optionalString(body.birthday, "Birthday", { max: 10 });
-    if (b && !/^\d{4}-\d{2}-\d{2}$/.test(b)) badRequest("Birthday must be YYYY-MM-DD");
-    updates.birthday = b;
+    updates.birthday = optionalDate(body.birthday, "Birthday");
   }
   if (body.notifyBudgetAlerts !== undefined)
     updates.notifyBudgetAlerts = Boolean(body.notifyBudgetAlerts);

@@ -7,7 +7,9 @@ import type { AppEnv } from "../lib/types";
 import {
   badRequest,
   optionalBool,
+  optionalDate,
   optionalString,
+  requireDate,
   requireEnum,
   requireString,
 } from "../lib/validate";
@@ -162,8 +164,7 @@ app.post("/", async (c) => {
 
   const title = requireString(body.title, "Title", { max: 160 });
   const cadence = requireEnum(body.cadence ?? "weekly", CHORE_CADENCES, "Cadence");
-  const dueDate = optionalString(body.dueDate, "Due date", { max: 10 }) ?? todayYmd();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) badRequest("Due date must be YYYY-MM-DD");
+  const dueDate = optionalDate(body.dueDate, "Due date") ?? todayYmd();
   const assignedTo = await assertMember(
     db,
     user.familyId,
@@ -207,9 +208,7 @@ app.patch("/:id", async (c) => {
   if (body.cadence !== undefined)
     updates.cadence = requireEnum(body.cadence, CHORE_CADENCES, "Cadence");
   if (body.dueDate !== undefined) {
-    const d = requireString(body.dueDate, "Due date", { max: 10 });
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) badRequest("Due date must be YYYY-MM-DD");
-    updates.dueDate = d;
+    updates.dueDate = requireDate(body.dueDate, "Due date");
   }
   if (body.assignedTo !== undefined) {
     updates.assignedTo = await assertMember(
