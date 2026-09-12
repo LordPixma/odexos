@@ -2,6 +2,15 @@ import { Link } from "react-router-dom";
 import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import { Avatar, Card, EmptyState, PageLoader } from "../components/ui";
+import {
+  CalendarIcon,
+  ChartIcon,
+  ClipboardIcon,
+  ReceiptIcon,
+  TargetIcon,
+  UsersIcon,
+  WalletIcon,
+} from "../components/icons";
 import { ACTIVITY_COLORS } from "../lib/labels";
 import {
   formatDate,
@@ -157,6 +166,44 @@ function SpendArea({ trend }: { trend: DailySpend[] }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Section nav card (the dashboard is the menu)
+// ---------------------------------------------------------------------------
+function NavCard({
+  to,
+  label,
+  stat,
+  icon,
+  grad,
+}: {
+  to: string;
+  label: string;
+  stat: string;
+  icon: React.ReactNode;
+  grad: [string, string];
+}) {
+  return (
+    <Link
+      to={to}
+      className="card card-hover group relative flex flex-col gap-3 p-4"
+    >
+      <span
+        className="flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.8)]"
+        style={{ backgroundImage: `linear-gradient(135deg, ${grad[0]}, ${grad[1]})` }}
+      >
+        {icon}
+      </span>
+      <div>
+        <div className="font-display text-sm font-semibold text-white">{label}</div>
+        <div className="truncate text-xs text-slate-400">{stat}</div>
+      </div>
+      <span className="absolute right-3.5 top-3.5 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-slate-200">
+        →
+      </span>
+    </Link>
+  );
+}
+
 function CardHead({
   title,
   subtitle,
@@ -229,6 +276,67 @@ export default function DashboardPage() {
     .sort((a, b) => (a.date < b.date ? 1 : -1))
     .slice(0, 6);
 
+  // Section nav cards (replace the old sidebar menu).
+  const alertsCount = data.budgetAlerts.length;
+  const memberCount = data.members.length;
+  const navItems: {
+    to: string;
+    label: string;
+    stat: string;
+    icon: React.ReactNode;
+    grad: [string, string];
+  }[] = [
+    {
+      to: "/activities",
+      label: "Activities",
+      icon: <CalendarIcon size={20} />,
+      grad: ["#3b82f6", "#22d3ee"],
+      stat: `${data.todayActivities.length} today · ${data.upcomingActivities.length} soon`,
+    },
+    {
+      to: "/household",
+      label: "Household",
+      icon: <ClipboardIcon size={20} />,
+      grad: ["#8b5cf6", "#6366f1"],
+      stat: "Lists & meal plan",
+    },
+    {
+      to: "/expenses",
+      label: "Expenses",
+      icon: <WalletIcon size={20} />,
+      grad: ["#10b981", "#059669"],
+      stat: `${formatMoneyCompact(data.monthSpendCents, data.currency)} this month`,
+    },
+    {
+      to: "/transactions",
+      label: "Transactions",
+      icon: <ReceiptIcon size={20} />,
+      grad: ["#06b6d4", "#0891b2"],
+      stat: "Bank activity",
+    },
+    {
+      to: "/budgets",
+      label: "Budgets",
+      icon: <TargetIcon size={20} />,
+      grad: ["#f59e0b", "#d97706"],
+      stat: alertsCount > 0 ? `${alertsCount} alert${alertsCount > 1 ? "s" : ""}` : "On track",
+    },
+    {
+      to: "/finance",
+      label: "Finance",
+      icon: <ChartIcon size={20} />,
+      grad: ["#34d399", "#10b981"],
+      stat: `${formatMoneyCompact(data.finance.netWorthCents, data.currency)} net worth`,
+    },
+    {
+      to: "/family",
+      label: "Family",
+      icon: <UsersIcon size={20} />,
+      grad: ["#ec4899", "#8b5cf6"],
+      stat: `${memberCount} member${memberCount === 1 ? "" : "s"}`,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* ---- Gradient welcome hero ---- */}
@@ -281,7 +389,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ---- Top row: finances / budgets rings / today ---- */}
+      {/* ---- Section cards (the menu) ---- */}
+      <div>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+          Explore
+        </h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+          {navItems.map((n) => (
+            <NavCard key={n.to} {...n} />
+          ))}
+        </div>
+      </div>
+
+      {/* ---- Highlights: finances / budgets rings / today ---- */}
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Finances overview */}
         <Card className="p-5">
