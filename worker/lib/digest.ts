@@ -1,11 +1,14 @@
-import { and, eq, gte, lte, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, ne } from "drizzle-orm";
 import type { Db } from "../db/client";
 import {
   activities,
+  allowanceLedger,
   families,
   listItems,
   lists,
   meals,
+  merits,
+  roomInspections,
   users,
 } from "../db/schema";
 import { toActivity } from "./serialize";
@@ -16,6 +19,7 @@ import {
   currentMonthKey,
 } from "./budgets";
 import { getEmailProvider } from "./email";
+import { balanceFor, previousWeek } from "./allowance";
 import type { Bindings } from "./types";
 import {
   EXPENSE_CATEGORY_LABELS,
@@ -59,9 +63,22 @@ export function mondayUTC(now: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** One child's week, as it settled. */
+interface DigestChild {
+  name: string;
+  merits: number;
+  demerits: number;
+  net: number;
+  settledCents: number | null; // null when the week hasn't been settled yet
+  balanceCents: number;
+  inspection: number | null; // rating out of 5
+  topNotes: string[]; // a couple of reasons, so the number means something
+}
+
 interface DigestData {
   familyName: string;
   currency: string;
+  children: DigestChild[];
   upcoming: Activity[];
   meals: Meal[];
   monthSpendCents: number;
@@ -138,9 +155,57 @@ async function gatherDigest(db: Db, familyId: string): Promise<DigestData> {
     .slice(0, 8)
     .map((i) => ({ list: listName.get(i.listId) ?? "List", text: i.text }));
 
+  // Last week's merits and what they settled at — this email goes out on
+  // Monday, just after the week closes, which is exactly when it's relevant.
+  const lastWeek = previousWeek(mondayUTC(now));
+  const childRows = await db.query.users.findMany({
+    where: and(eq(users.familyId, familyId), eq(users.role, "child")),
+    orderBy: [asc(users.createdAt)],
+  });
+
+  const children: DigestChild[] = [];
+  for (const child of childRows) {
+    const meritRows = await db.query.merits.findMany({
+      where: and(eq(merits.childId, child.id), eq(merits.weekStart, lastWeek)),
+      orderBy: [desc(merits.createdAt)],
+    });
+    if (meritRows.length === 0 && child.allowanceCents === 0) continue;
+
+    let up = 0;
+    let down = 0;
+    for (const m of meritRows) {
+      if (m.value > 0) up += m.value;
+      else down += -m.value;
+    }
+    const settled = await db.query.allowanceLedger.findFirst({
+      where: and(
+        eq(allowanceLedger.childId, child.id),
+        eq(allowanceLedger.kind, "weekly"),
+        eq(allowanceLedger.weekStart, lastWeek),
+      ),
+    });
+    const inspection = await db.query.roomInspections.findFirst({
+      where: and(
+        eq(roomInspections.childId, child.id),
+        eq(roomInspections.weekStart, lastWeek),
+      ),
+    });
+    children.push({
+      name: child.nickname ?? child.name,
+      merits: up,
+      demerits: down,
+      net: up - down,
+      settledCents: settled?.amountCents ?? null,
+      balanceCents: await balanceFor(db, child.id),
+      inspection: inspection?.rating ?? null,
+      topNotes: meritRows.slice(0, 3).map((m) => `${m.value > 0 ? "+" : "−"} ${m.note}`),
+    });
+  }
+
   return {
     familyName: fam?.name ?? "Your family",
     currency,
+    children,
     upcoming: upcoming.slice(0, 12),
     meals: mealRows,
     monthSpendCents,
@@ -179,6 +244,23 @@ export function renderDigest(d: DigestData): DigestContent {
         `  ${DOW.format(new Date(`${m.date}T00:00:00Z`))} ${MEAL_SLOT_LABELS[m.slot]}: ${m.title}`,
       );
   t.push("");
+
+  if (d.children.length > 0) {
+    t.push("LAST WEEK'S MERITS");
+    for (const c of d.children) {
+      const settled =
+        c.settledCents === null
+          ? "not settled yet"
+          : `settled at ${money(c.settledCents, d.currency)}`;
+      t.push(
+        `  ${c.name}: ${c.net > 0 ? "+" : ""}${c.net} (${c.merits} up, ${c.demerits} down) — ${settled}`,
+      );
+      if (c.inspection !== null) t.push(`    Room: ${c.inspection}/5`);
+      for (const n of c.topNotes) t.push(`    ${n}`);
+      t.push(`    Balance: ${money(c.balanceCents, d.currency)}`);
+    }
+    t.push("");
+  }
 
   t.push("SPENDING");
   t.push(`  This month so far: ${money(d.monthSpendCents, d.currency)}`);
@@ -230,6 +312,28 @@ export function renderDigest(d: DigestData): DigestContent {
     (d.overallStatus ? `<div style="color:#64748b;">Overall budget: ${escapeHtml(d.overallStatus)}</div>` : "") +
     alertsHtml;
 
+  const meritsHtml = d.children
+    .map((c) => {
+      const settled =
+        c.settledCents === null
+          ? `<span style="color:#94a3b8;">not settled yet</span>`
+          : `<strong>${money(c.settledCents, d.currency)}</strong>`;
+      const notes = c.topNotes
+        .map(
+          (n) =>
+            `<div style="padding:1px 0;color:#94a3b8;font-size:13px;">${escapeHtml(n)}</div>`,
+        )
+        .join("");
+      return `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+        <div><strong>${escapeHtml(c.name)}</strong> &nbsp;<span style="color:${c.net >= 0 ? "#0f9d6b" : "#dc2626"};">${c.net > 0 ? "+" : ""}${c.net}</span>
+        <span style="color:#94a3b8;">(${c.merits} up, ${c.demerits} down)</span> → ${settled}</div>
+        ${c.inspection !== null ? `<div style="color:#94a3b8;font-size:13px;">Room: ${c.inspection}/5</div>` : ""}
+        ${notes}
+        <div style="color:#94a3b8;font-size:13px;">Balance: ${money(c.balanceCents, d.currency)}</div>
+      </div>`;
+    })
+    .join("");
+
   const listsHtml = d.openItemCount
     ? `<div style="color:#64748b;margin-bottom:4px;">${d.openItemCount} open item${d.openItemCount === 1 ? "" : "s"}</div>` +
       d.openItems
@@ -246,6 +350,7 @@ export function renderDigest(d: DigestData): DigestContent {
 <tr><td style="background:#4f46e5;padding:22px 24px;color:#fff;font:800 18px/1.2 -apple-system,Segoe UI,Roboto,Arial,sans-serif;">OdexOS<div style="font:500 13px/1.4 -apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#c7d2fe;margin-top:2px;">${escapeHtml(subject)}</div></td></tr>
 ${section("The week ahead", activitiesHtml)}
 ${section("Meal plan", mealsHtml)}
+${d.children.length > 0 ? section("Last week's merits", meritsHtml) : ""}
 ${section("Spending", spendHtml)}
 ${section("Lists", listsHtml)}
 <tr><td style="padding:18px 24px;color:#94a3b8;font:12px/1.5 -apple-system,Segoe UI,Roboto,Arial,sans-serif;border-top:1px solid #f1f5f9;">Sent by OdexOS · your family's command center. Turn this off in Alerts settings.</td></tr>
