@@ -135,7 +135,7 @@ async function syncTransactions(
   } catch (err) {
     return {
       added: 0,
-      error: `${pa.name}: ${err instanceof Error ? err.message : "fetch failed"}`,
+      error: err instanceof Error ? err.message : "fetch failed",
     };
   }
   if (providerTxns.length === 0) return { added: 0 };
@@ -251,10 +251,20 @@ export async function syncConnection(
 
     // Balances still synced, so the connection is healthy — but say so when no
     // transactions came through, rather than reporting a clean success.
-    const note =
-      failures.length > 0 && transactionsAdded === 0
-        ? `Balances synced, but no transactions: ${failures.slice(0, 3).join("; ")}`
-        : null;
+    // Group by reason: listing the same message per account is just noise.
+    let note: string | null = null;
+    if (failures.length > 0 && transactionsAdded === 0) {
+      const counts = new Map<string, number>();
+      for (const f of failures) counts.set(f, (counts.get(f) ?? 0) + 1);
+      const reasons = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([reason, n]) => `${reason} (${n} account${n === 1 ? "" : "s"})`)
+        .join("; ");
+      const reconnect = failures.some((f) => f.includes("hasn't granted"))
+        ? " Reconnect the bank and allow access to transactions."
+        : "";
+      note = `Balances synced, but no transactions — ${reasons}.${reconnect}`;
+    }
 
     await db
       .update(bankConnections)

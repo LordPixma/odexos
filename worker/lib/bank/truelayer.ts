@@ -115,7 +115,17 @@ export class TrueLayerProvider implements BankProvider {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) {
-      throw new Error(`TrueLayer GET ${path} failed (${res.status})`);
+      // The endpoint is diagnostic detail; what matters to whoever reads this
+      // is what they can do about it.
+      const hint =
+        res.status === 403
+          ? "the bank hasn't granted access to this"
+          : res.status === 404 || res.status === 501
+            ? "the bank doesn't offer this"
+            : `HTTP ${res.status}`;
+      const err = new Error(hint) as Error & { status?: number };
+      err.status = res.status;
+      throw err;
     }
     return (await res.json()) as T;
   }
