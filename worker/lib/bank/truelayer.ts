@@ -201,8 +201,11 @@ export class TrueLayerProvider implements BankProvider {
     type Listing<T> = { results?: T[] };
 
     const base = account.kind === "card" ? "cards" : "accounts";
-    const to = new Date().toISOString().slice(0, 10);
-    const path = `/data/v1/${base}/${account.externalId}/transactions?from=${from}T00:00:00Z&to=${to}T23:59:59Z`;
+    // `to` must not be in the future. Asking for the end of today was a 400 on
+    // every account, which is what silently emptied this feed — so use the
+    // current instant, formatted the way TrueLayer documents it.
+    const to = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    const path = `/data/v1/${base}/${account.externalId}/transactions?from=${from}T00:00:00Z&to=${to}`;
 
     // Deliberately not caught here. Swallowing the failure made a broken
     // transaction feed indistinguishable from an account that simply had no
