@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   useActivities,
   useCreateActivity,
@@ -95,6 +96,9 @@ function fromActivity(a: Activity): FormState {
 }
 
 export default function ActivitiesPage() {
+  // The Parent Centre links here with ?memberId=… to show one child's week.
+  const [params, setParams] = useSearchParams();
+  const memberId = params.get("memberId") ?? "";
   const [showPast, setShowPast] = useState(false);
   const from = useMemo(() => {
     const d = new Date();
@@ -102,9 +106,10 @@ export default function ActivitiesPage() {
     return d.toISOString();
   }, []);
 
-  const { data: activities, isLoading } = useActivities(
-    showPast ? {} : { from },
-  );
+  const { data: activities, isLoading } = useActivities({
+    ...(showPast ? {} : { from }),
+    ...(memberId ? { memberId } : {}),
+  });
   const { data: members = [] } = useMembers();
   const memberById = new Map(members.map((m) => [m.id, m]));
 
@@ -187,6 +192,31 @@ export default function ActivitiesPage() {
           </div>
         }
       />
+
+      {/* A filtered list with nothing saying so looks like missing data. */}
+      {memberId && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+          <span className="text-sm text-slate-300">
+            Showing{" "}
+            <strong className="text-white">
+              {memberById.get(memberId)?.nickname ??
+                memberById.get(memberId)?.name ??
+                "one member"}
+            </strong>
+            's schedule
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              params.delete("memberId");
+              setParams(params, { replace: true });
+            }}
+            className="rounded-lg px-2 py-1 text-xs font-semibold text-brand-400 transition hover:text-brand-300"
+          >
+            Show everyone
+          </button>
+        </div>
+      )}
 
       {isLoading ? (
         <PageLoader />
