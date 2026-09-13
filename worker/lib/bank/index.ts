@@ -109,7 +109,13 @@ function lookbackDate(days: number): string {
     .slice(0, 10);
 }
 
-/** Pulls new transactions for one account and inserts them (dedup by ref). */
+/**
+ * Pulls new transactions for one account and inserts them (dedup by ref).
+ *
+ * One account failing must not abandon the rest — a Monzo pot, for instance,
+ * has balances but no transaction feed — so the reason is returned rather than
+ * thrown, and the caller decides whether the sync as a whole is in trouble.
+ */
 async function syncTransactions(
   db: Db,
   connection: BankConnectionRow,
@@ -118,13 +124,21 @@ async function syncTransactions(
   pa: ProviderAccount,
   accountId: string,
   rules: CustomRule[],
-): Promise<number> {
-  const providerTxns = await provider.fetchTransactions(
-    accessToken,
-    { externalId: pa.externalId, kind: pa.kind },
-    lookbackDate(TRANSACTION_LOOKBACK_DAYS),
-  );
-  if (providerTxns.length === 0) return 0;
+): Promise<{ added: number; error?: string }> {
+  let providerTxns;
+  try {
+    providerTxns = await provider.fetchTransactions(
+      accessToken,
+      { externalId: pa.externalId, kind: pa.kind },
+      lookbackDate(TRANSACTION_LOOKBACK_DAYS),
+    );
+  } catch (err) {
+    return {
+      added: 0,
+      error: `${pa.name}: ${err instanceof Error ? err.message : "fetch failed"}`,
+    };
+  }
+  if (providerTxns.length === 0) return { added: 0 };
 
   const existing = await db.query.transactions.findMany({
     where: eq(transactions.accountId, accountId),
@@ -151,13 +165,13 @@ async function syncTransactions(
       bookedAt: t.bookedAt,
     }));
 
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) return { added: 0 };
   // Insert one row at a time: Drizzle's multi-row insert into D1 misbinds
   // parameters in a way that trips foreign-key checks, so we avoid it here.
   for (const row of rows) {
     await db.insert(transactions).values(row);
   }
-  return rows.length;
+  return { added: rows.length };
 }
 
 /** Syncs balances AND transactions for a connection. */
@@ -220,8 +234,9 @@ export async function syncConnection(
     }
 
     const rules = await loadFamilyRules(db, connection.familyId);
+    const failures: string[] = [];
     for (const { pa, accountId } of linked) {
-      transactionsAdded += await syncTransactions(
+      const result = await syncTransactions(
         db,
         connection,
         provider,
@@ -230,11 +245,20 @@ export async function syncConnection(
         accountId,
         rules,
       );
+      transactionsAdded += result.added;
+      if (result.error) failures.push(result.error);
     }
+
+    // Balances still synced, so the connection is healthy — but say so when no
+    // transactions came through, rather than reporting a clean success.
+    const note =
+      failures.length > 0 && transactionsAdded === 0
+        ? `Balances synced, but no transactions: ${failures.slice(0, 3).join("; ")}`
+        : null;
 
     await db
       .update(bankConnections)
-      .set({ lastSyncedAt: now, status: "active", lastError: null })
+      .set({ lastSyncedAt: now, status: "active", lastError: note })
       .where(eq(bankConnections.id, connection.id));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Sync failed";

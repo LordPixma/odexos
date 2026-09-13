@@ -324,14 +324,29 @@ export interface FinanceSummary {
   byType: { type: AccountType; balanceCents: number }[];
 }
 
-export interface DashboardData {
+/** What everyone's dashboard has, whatever their role. */
+export interface BaseDashboardData {
   family: { id: string; name: string };
   members: Member[];
   todayActivities: Activity[];
   upcomingActivities: Activity[];
+  currency: string;
+  upcomingBirthdays: UpcomingBirthday[]; // next 90 days, soonest first
+  choresOpen: number; // chores overdue or due today
+}
+
+/**
+ * A child's dashboard. The family's money is absent rather than zeroed, so
+ * there is nothing to read even with the network tab open.
+ */
+export interface ChildDashboardData extends BaseDashboardData {
+  kind: "child";
+}
+
+export interface AdultDashboardData extends BaseDashboardData {
+  kind: "adult";
   monthSpendCents: number; // combined: manual expenses + synced bank debits
   monthIncomeCents: number; // synced bank credits this month
-  currency: string;
   expenseByCategory: { category: ExpenseCategory; amountCents: number }[];
   finance: FinanceSummary;
   budgetAlerts: BudgetProgress[]; // budgets at warning/over this month
@@ -339,9 +354,13 @@ export interface DashboardData {
   recentTransactions: Transaction[]; // latest synced bank activity
   recentExpenses: Expense[]; // latest manually-logged expenses (family feed)
   spendTrend: DailySpend[]; // last 14 days, combined spend + income per day
-  upcomingBirthdays: UpcomingBirthday[]; // next 90 days, soonest first
-  choresOpen: number; // chores overdue or due today
 }
+
+/** The discriminant is what stops a child's view reading fields it never got. */
+export type AnyDashboardData = ChildDashboardData | AdultDashboardData;
+
+/** Kept as the adult shape: most of the app's dashboard code assumes money. */
+export type DashboardData = AdultDashboardData;
 
 export interface DailySpend {
   date: string; // YYYY-MM-DD

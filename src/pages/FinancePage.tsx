@@ -82,6 +82,10 @@ function ConnectionRow({ connection }: { connection: BankConnection }) {
           </span>
           {connection.status === "error" ? (
             <span className="chip bg-red-500/15 text-red-300">Needs attention</span>
+          ) : connection.lastError ? (
+            <span className="chip bg-accent-500/15 text-accent-300">
+              Partly synced
+            </span>
           ) : (
             <span className="chip bg-emerald-500/15 text-emerald-300">Connected</span>
           )}
@@ -90,8 +94,13 @@ function ConnectionRow({ connection }: { connection: BankConnection }) {
             {connection.accountCount === 1 ? "" : "s"}
           </span>
         </div>
-        <div className="mt-0.5 text-xs text-slate-400">
-          {connection.status === "error" && connection.lastError
+        {/* A connection can be healthy and still not be returning everything —
+            say which, rather than reporting a clean success. */}
+        <div
+          className="mt-0.5 break-words text-xs"
+          style={{ color: connection.lastError ? "#eeb85f" : "#94a3b8" }}
+        >
+          {connection.lastError
             ? connection.lastError
             : connection.lastSyncedAt
               ? `Last synced ${formatDateTime(connection.lastSyncedAt)}`

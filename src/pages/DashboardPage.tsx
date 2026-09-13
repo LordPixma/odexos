@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
-import { isParent } from "@shared/types";
+import { isParent, type AdultDashboardData } from "@shared/types";
+import ChildDashboard from "../components/ChildDashboard";
 import EnableNotifications from "../components/EnableNotifications";
 import { Card, EmptyState, MemberAvatar, PageLoader } from "../components/ui";
 import {
@@ -235,10 +236,16 @@ function ringColors(b: BudgetProgress): [string, string] {
 }
 
 export default function DashboardPage() {
-  const { auth } = useAuth();
   const { data, isLoading } = useDashboard();
 
   if (isLoading || !data) return <PageLoader />;
+  // Children get their own dashboard, not this one with pieces removed.
+  if (data.kind === "child") return <ChildDashboard data={data} />;
+  return <AdultDashboard data={data} />;
+}
+
+function AdultDashboard({ data }: { data: AdultDashboardData }) {
+  const { auth } = useAuth();
 
   const memberById = new Map(data.members.map((m) => [m.id, m]));
   const firstName = auth?.member.name.split(" ")[0] ?? "there";

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import {
   enablePush,
   isStandalone,
@@ -24,6 +25,7 @@ function isIos(): boolean {
  * actually are, and stays out of the way after.
  */
 export default function EnableNotifications() {
+  const { auth } = useAuth();
   const [show, setShow] = useState(false);
   const [config, setConfig] = useState<PushConfig | null>(null);
   const [busy, setBusy] = useState(false);
@@ -82,7 +84,9 @@ export default function EnableNotifications() {
             {error ??
               (needsInstall
                 ? "In Safari, tap Share then Add to Home Screen — then notifications can be switched on."
-                : "Merits, budget alerts and birthdays, straight to this device.")}
+                : auth?.member.role === "child"
+                  ? "Merits, chores and birthdays, straight to this device."
+                  : "Merits, budget alerts and birthdays, straight to this device.")}
           </p>
         </div>
         <div className="flex shrink-0 gap-2">

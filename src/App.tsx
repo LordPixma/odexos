@@ -22,6 +22,16 @@ import AcceptInvitePage from "./pages/AcceptInvitePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 
+/**
+ * Routes a child has no business on. The API refuses them too — this just
+ * avoids showing an error page for a door that was never theirs.
+ */
+function AdultsOnly({ children }: { children: React.ReactNode }) {
+  const { auth } = useAuth();
+  if (auth?.member.role === "child") return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   const { auth, isLoading, unreachable, retry } = useAuth();
 
@@ -56,10 +66,38 @@ export default function App() {
           <Route path="allowance" element={<AllowancePage />} />
           <Route path="allowance/:childId" element={<AllowancePage />} />
           <Route path="parents" element={<ParentCentrePage />} />
-          <Route path="expenses" element={<ExpensesPage />} />
-          <Route path="transactions" element={<TransactionsPage />} />
-          <Route path="budgets" element={<BudgetsPage />} />
-          <Route path="finance" element={<FinancePage />} />
+          <Route
+            path="expenses"
+            element={
+              <AdultsOnly>
+                <ExpensesPage />
+              </AdultsOnly>
+            }
+          />
+          <Route
+            path="transactions"
+            element={
+              <AdultsOnly>
+                <TransactionsPage />
+              </AdultsOnly>
+            }
+          />
+          <Route
+            path="budgets"
+            element={
+              <AdultsOnly>
+                <BudgetsPage />
+              </AdultsOnly>
+            }
+          />
+          <Route
+            path="finance"
+            element={
+              <AdultsOnly>
+                <FinancePage />
+              </AdultsOnly>
+            }
+          />
           <Route path="family" element={<MembersPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

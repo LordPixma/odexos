@@ -204,9 +204,10 @@ export class TrueLayerProvider implements BankProvider {
     const to = new Date().toISOString().slice(0, 10);
     const path = `/data/v1/${base}/${account.externalId}/transactions?from=${from}T00:00:00Z&to=${to}T23:59:59Z`;
 
-    const data = await this.get<Listing<Txn>>(accessToken, path).catch(
-      () => ({ results: [] }) as Listing<Txn>,
-    );
+    // Deliberately not caught here. Swallowing the failure made a broken
+    // transaction feed indistinguishable from an account that simply had no
+    // activity — the caller records the reason per account instead.
+    const data = await this.get<Listing<Txn>>(accessToken, path);
 
     return (data.results ?? []).map((t) => {
       const direction: TransactionDirection =

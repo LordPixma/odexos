@@ -11,12 +11,12 @@ import type {
   BankConnection,
   Budget,
   AllowanceOverview,
+  AnyDashboardData,
   BudgetsOverview,
   CalendarSubscription,
   CategoryRule,
   Chore,
   ChoresOverview,
-  DashboardData,
   Expense,
   FinanceSummary,
   FamilySettings,
@@ -64,7 +64,7 @@ function useInvalidateAll() {
 export function useDashboard() {
   return useQuery({
     queryKey: ["dashboard"],
-    queryFn: () => api.get<DashboardData>("/dashboard"),
+    queryFn: () => api.get<AnyDashboardData>("/dashboard"),
   });
 }
 

@@ -18,6 +18,7 @@ import {
 } from "../lib/serialize";
 import { expandActivities } from "../lib/recurrence";
 import { upcomingBirthdays } from "../lib/birthdays";
+import { isChild } from "../lib/access";
 import {
   buildBudgetsOverview,
   computeSpendByCategory,
@@ -28,6 +29,7 @@ import {
   ACCOUNT_TYPES,
   LIABILITY_ACCOUNT_TYPES,
   type AccountType,
+  type ChildDashboardData,
   type DashboardData,
   type FinanceSummary,
 } from "@shared/types";
@@ -217,14 +219,29 @@ app.get("/", async (c) => {
 
   const budgetOverview = await buildBudgetsOverview(db, familyId, monthKey);
 
-  const data: DashboardData = {
+  const shared = {
     family: { id: familyId, name: fam?.name ?? "" },
     members: memberRows.map(toMember),
     todayActivities,
     upcomingActivities,
+    currency,
+    upcomingBirthdays: upcomingBirthdays(memberRows, now).slice(0, 4),
+    choresOpen: openChores.length,
+  };
+
+  // A child's dashboard carries none of the family's money — not zeroed out,
+  // absent. Hiding the cards but shipping the numbers would still put the
+  // household's finances one devtools tab away.
+  if (isChild(user.role)) {
+    const data: ChildDashboardData = { ...shared, kind: "child" };
+    return c.json(data);
+  }
+
+  const data: DashboardData = {
+    ...shared,
+    kind: "adult",
     monthSpendCents,
     monthIncomeCents,
-    currency,
     expenseByCategory,
     finance,
     budgetAlerts: budgetOverview.alerts,
@@ -232,8 +249,6 @@ app.get("/", async (c) => {
     recentTransactions,
     recentExpenses,
     spendTrend,
-    upcomingBirthdays: upcomingBirthdays(memberRows, now).slice(0, 4),
-    choresOpen: openChores.length,
   };
   return c.json(data);
 });
