@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth, useLogout } from "../lib/auth";
 import { MemberAvatar } from "./ui";
+import UpdateBanner from "./UpdateBanner";
 import NotificationsBell from "./NotificationsBell";
 import { LogoutIcon } from "./icons";
 
@@ -88,6 +89,8 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </main>
+
+      <UpdateBanner />
     </div>
   );
 }

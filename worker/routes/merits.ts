@@ -3,6 +3,7 @@ import { and, desc, eq, gte } from "drizzle-orm";
 import { families, merits, users } from "../db/schema";
 import { generateId } from "../lib/crypto";
 import { tallyFor, weekStartOf } from "../lib/allowance";
+import { pushToUser } from "../lib/push";
 import type { AppEnv } from "../lib/types";
 import { badRequest, requireAmountCents, requireString } from "../lib/validate";
 import { isParent, type Merit, type MeritBoard } from "@shared/types";
@@ -119,6 +120,24 @@ app.post("/", async (c) => {
     weekStart: weekStartOf(),
     issuedBy: user.id,
   });
+
+  // Tell the child. A merit they only discover on Sunday has lost most of its
+  // point — and this is the notification a family actually wants.
+  const family = await db.query.families.findFirst({
+    where: eq(families.id, user.familyId),
+  });
+  const worth = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: family?.currency ?? "GBP",
+  }).format((family?.meritValueCents ?? 50) / 100);
+  c.executionCtx.waitUntil(
+    pushToUser(db, c.env, childId, {
+      title: raw > 0 ? `⭐ Merit — +${worth}` : `Demerit — −${worth}`,
+      body: note,
+      url: "/merits",
+      tag: `merit:${id}`,
+    }).then(() => undefined),
+  );
 
   const created = await db.query.merits.findFirst({ where: eq(merits.id, id) });
   return c.json({ merit: created ? toMerit(created) : null }, 201);

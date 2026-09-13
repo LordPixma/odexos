@@ -18,6 +18,7 @@ import {
 } from "../lib/allowance";
 import type { AppEnv } from "../lib/types";
 import { badRequest, optionalString, requireString } from "../lib/validate";
+import { pushToUser } from "../lib/push";
 import {
   isParent,
   type ChildSummary,
@@ -174,6 +175,15 @@ app.post("/inspections", async (c) => {
     note,
     inspectedBy: user.id,
   });
+  c.executionCtx.waitUntil(
+    pushToUser(db, c.env, childId, {
+      title: `Room inspection: ${rating}/5`,
+      body: note ?? "This week's result is in.",
+      url: "/merits",
+      tag: `inspection:${weekStart}`,
+    }).then(() => undefined),
+  );
+
   const created = await db.query.roomInspections.findFirst({
     where: eq(roomInspections.id, id),
   });

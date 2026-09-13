@@ -289,6 +289,51 @@ export async function sendPush(
   };
 }
 
+/**
+ * Sends to one person's devices, whatever their family-wide preferences say —
+ * used for things addressed to them personally, like a merit. Prunes dead
+ * subscriptions. Returns how many landed and why any failed, so a "nothing
+ * arrived" can be diagnosed instead of guessed at.
+ */
+export async function pushToUser(
+  db: Db,
+  env: Bindings,
+  userId: string,
+  message: PushMessage,
+): Promise<{ sent: number; removed: number; errors: string[] }> {
+  const out = { sent: 0, removed: 0, errors: [] as string[] };
+  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
+    out.errors.push("Push is not configured on the server");
+    return out;
+  }
+
+  try {
+    const subs = await db.query.pushSubscriptions.findMany({
+      where: eq(pushSubscriptions.userId, userId),
+    });
+    for (const sub of subs) {
+      const result = await sendPush(env, sub, message);
+      if (result.ok) {
+        out.sent++;
+        await db
+          .update(pushSubscriptions)
+          .set({ lastUsedAt: new Date().toISOString() })
+          .where(eq(pushSubscriptions.id, sub.id));
+      } else if (result.gone) {
+        await db
+          .delete(pushSubscriptions)
+          .where(eq(pushSubscriptions.id, sub.id));
+        out.removed++;
+      } else {
+        out.errors.push(`${result.status}: ${result.error.slice(0, 160)}`);
+      }
+    }
+  } catch (err) {
+    out.errors.push(err instanceof Error ? err.message : "Push failed");
+  }
+  return out;
+}
+
 // --- Fan-out to a family ---
 
 /**

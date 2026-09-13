@@ -46,6 +46,28 @@ export function isStandalone(): boolean {
   );
 }
 
+const updateListeners = new Set<(ready: boolean) => void>();
+let updateReady = false;
+
+/**
+ * Fires when a new build is installed and waiting. Reloading is what actually
+ * swaps it in, so the app can offer that rather than leaving someone on old
+ * code until they happen to close the tab.
+ */
+export function onUpdateReady(fn: (ready: boolean) => void): () => void {
+  updateListeners.add(fn);
+  fn(updateReady);
+  return () => updateListeners.delete(fn);
+}
+
+function announceUpdate() {
+  updateReady = true;
+  for (const fn of updateListeners) fn(true);
+}
+
+/** How often a long-open app checks for a new build. */
+const UPDATE_CHECK_MS = 30 * 60 * 1000;
+
 export function registerServiceWorker(): void {
   if (!("serviceWorker" in navigator)) return;
 
@@ -63,9 +85,30 @@ export function registerServiceWorker(): void {
   });
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((err) => {
-      console.warn("Service worker registration failed:", err);
-    });
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        // A worker arriving while one already controls the page is an update,
+        // not a first install — that's the case worth telling someone about.
+        reg.addEventListener("updatefound", () => {
+          const installing = reg.installing;
+          if (!installing || !navigator.serviceWorker.controller) return;
+          installing.addEventListener("statechange", () => {
+            if (installing.state === "installed") announceUpdate();
+          });
+        });
+
+        // An installed app can stay open for days, so look for a new build
+        // periodically and whenever it comes back to the foreground.
+        const check = () => {
+          if (document.visibilityState === "visible") void reg.update();
+        };
+        setInterval(check, UPDATE_CHECK_MS);
+        document.addEventListener("visibilitychange", check);
+      })
+      .catch((err) => {
+        console.warn("Service worker registration failed:", err);
+      });
   });
 }
 

@@ -97,6 +97,7 @@ app.post("/test", async (c) => {
 
   let sent = 0;
   let removed = 0;
+  const errors: string[] = [];
   for (const sub of subs) {
     const result = await sendPush(c.env, sub, {
       title: "OdexOS",
@@ -115,9 +116,23 @@ app.post("/test", async (c) => {
         .delete(pushSubscriptions)
         .where(eq(pushSubscriptions.id, sub.id));
       removed++;
+    } else {
+      // Surface the push service's own words — "nothing arrived" is otherwise
+      // impossible to tell apart from "the phone is asleep".
+      errors.push(`${result.status}: ${result.error.slice(0, 160)}`);
     }
   }
-  return c.json({ sent, removed });
+
+  if (sent === 0 && errors.length > 0) {
+    return c.json({ error: errors[0], sent, removed, errors }, 502);
+  }
+  if (sent === 0 && removed > 0) {
+    return c.json(
+      { error: "That device's subscription had expired — turn notifications back on", sent, removed },
+      410,
+    );
+  }
+  return c.json({ sent, removed, errors });
 });
 
 export default app;

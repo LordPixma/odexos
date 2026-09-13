@@ -6,8 +6,13 @@
  * is worse than an honest error.
  */
 
-// Bumped on each deploy by the build so old caches are dropped.
-const VERSION = "v1";
+// Bump when this file changes, to drop the previous caches on activate. It is
+// not tied to app deploys: build assets are content-hashed and navigations are
+// network-first, so a new release is picked up without touching this.
+const VERSION = "v2";
+// Hashed assets accumulate one set per release. They are immutable so they can
+// never go stale, but they shouldn't grow on someone's phone forever either.
+const MAX_CACHED_ASSETS = 60;
 const SHELL = `odexos-shell-${VERSION}`;
 const ASSETS = `odexos-assets-${VERSION}`;
 
@@ -54,7 +59,14 @@ self.addEventListener("fetch", (event) => {
           fetch(request).then((res) => {
             if (res.ok) {
               const copy = res.clone();
-              caches.open(ASSETS).then((c) => c.put(request, copy));
+              caches.open(ASSETS).then(async (cache) => {
+                await cache.put(request, copy);
+                // keys() is insertion-ordered, so the oldest entries go first.
+                const keys = await cache.keys();
+                for (const stale of keys.slice(0, keys.length - MAX_CACHED_ASSETS)) {
+                  await cache.delete(stale);
+                }
+              });
             }
             return res;
           }),

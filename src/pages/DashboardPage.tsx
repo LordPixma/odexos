@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import { isParent } from "@shared/types";
+import EnableNotifications from "../components/EnableNotifications";
 import { Card, EmptyState, MemberAvatar, PageLoader } from "../components/ui";
 import {
   BroomIcon,
@@ -438,6 +439,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <EnableNotifications />
 
       {/* ---- Section cards (the menu) ---- */}
       <div>
