@@ -75,14 +75,22 @@ export default function MeritsPage() {
         title="Merits"
         subtitle="How the week is going, and why."
         action={
-          parent ? (
+          <div className="flex items-center gap-2">
             <Link
-              to="/parents"
+              to="/merits/history"
               className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:text-white"
             >
-              Parent Centre
+              History
             </Link>
-          ) : undefined
+            {parent && (
+              <Link
+                to="/parents"
+                className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 ring-1 ring-white/10 transition hover:text-white"
+              >
+                Parent Centre
+              </Link>
+            )}
+          </div>
         }
       />
 
@@ -149,14 +157,25 @@ export default function MeritsPage() {
                   </div>
                 )}
 
-                {canOpen && (
+                <div className="mt-3 flex items-center justify-center gap-3 text-xs font-semibold">
                   <Link
-                    to={`/allowance/${t.childId}`}
-                    className="mt-3 block text-center text-xs font-semibold text-brand-400 hover:text-brand-300"
+                    to={`/merits/history/${t.childId}`}
+                    className="text-slate-400 hover:text-slate-200"
                   >
-                    Open allowance
+                    History
                   </Link>
-                )}
+                  {canOpen && (
+                    <>
+                      <span className="text-slate-700">·</span>
+                      <Link
+                        to={`/allowance/${t.childId}`}
+                        className="text-brand-400 hover:text-brand-300"
+                      >
+                        Allowance
+                      </Link>
+                    </>
+                  )}
+                </div>
               </Card>
             );
           })}

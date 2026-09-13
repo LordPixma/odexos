@@ -27,6 +27,7 @@ import type {
   ListWithItems,
   Meal,
   MeritBoard,
+  MeritHistory,
   ParentCentre,
   RoomInspection,
   SavingsPot,
@@ -575,10 +576,11 @@ function useInvalidateChores() {
   };
 }
 
-export function useChores() {
+/** `assignedTo` narrows the list — and `openToday` — to one person. */
+export function useChores(assignedTo?: string) {
   return useQuery({
-    queryKey: ["chores"],
-    queryFn: () => api.get<ChoresOverview>("/chores"),
+    queryKey: ["chores", assignedTo ?? "all"],
+    queryFn: () => api.get<ChoresOverview>(`/chores${qs({ assignedTo })}`),
   });
 }
 
@@ -696,6 +698,16 @@ export function useMeritBoard(week?: string) {
   return useQuery({
     queryKey: ["merits", week ?? "current"],
     queryFn: () => api.get<MeritBoard>(`/merits${qs({ week })}`),
+  });
+}
+
+/** Keyed under "merits" so issuing one refreshes the history too. */
+export function useMeritHistory(childId: string | undefined, weeks = 12) {
+  return useQuery({
+    queryKey: ["merits", "history", childId, weeks],
+    queryFn: () =>
+      api.get<MeritHistory>(`/merits/history/${childId}${qs({ weeks: String(weeks) })}`),
+    enabled: Boolean(childId),
   });
 }
 
@@ -817,7 +829,11 @@ export function useRecordInspection() {
   return useMutation({
     mutationFn: (body: { childId: string; rating: number; note?: string }) =>
       api.post<{ inspection: RoomInspection }>("/parents/inspections", body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["parent-centre"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["parent-centre"] });
+      // The rating shows up on the merit history week rows.
+      qc.invalidateQueries({ queryKey: ["merits"] });
+    },
   });
 }
 

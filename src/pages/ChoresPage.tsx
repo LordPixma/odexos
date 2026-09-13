@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   useChores,
   useCompleteChore,
@@ -155,7 +156,10 @@ function ChoreRow({
 }
 
 export default function ChoresPage() {
-  const { data, isLoading } = useChores();
+  // The Parent Centre and a child's own view link here with ?assignedTo=…
+  const [params, setParams] = useSearchParams();
+  const assignedTo = params.get("assignedTo") ?? "";
+  const { data, isLoading } = useChores(assignedTo || undefined);
   const { data: members = [] } = useMembers();
   const memberById = new Map(members.map((m) => [m.id, m]));
 
@@ -237,6 +241,31 @@ export default function ChoresPage() {
           </Button>
         }
       />
+
+      {/* A filtered board with nothing saying so reads as missing chores. */}
+      {assignedTo && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+          <span className="text-sm text-slate-300">
+            Showing{" "}
+            <strong className="text-white">
+              {members.find((m) => m.id === assignedTo)?.nickname ??
+                members.find((m) => m.id === assignedTo)?.name ??
+                "one member"}
+            </strong>
+            's chores
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              params.delete("assignedTo");
+              setParams(params, { replace: true });
+            }}
+            className="rounded-lg px-2 py-1 text-xs font-semibold text-brand-400 transition hover:text-brand-300"
+          >
+            Show everyone
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatTile

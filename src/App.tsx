@@ -16,6 +16,7 @@ import ProfilePage from "./pages/ProfilePage";
 import ChoresPage from "./pages/ChoresPage";
 import CalendarPage from "./pages/CalendarPage";
 import MeritsPage from "./pages/MeritsPage";
+import MeritHistoryPage from "./pages/MeritHistoryPage";
 import AllowancePage from "./pages/AllowancePage";
 import ParentCentrePage from "./pages/ParentCentrePage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
@@ -63,6 +64,8 @@ export default function App() {
           <Route path="household" element={<HouseholdPage />} />
           <Route path="chores" element={<ChoresPage />} />
           <Route path="merits" element={<MeritsPage />} />
+          <Route path="merits/history" element={<MeritHistoryPage />} />
+          <Route path="merits/history/:childId" element={<MeritHistoryPage />} />
           <Route path="allowance" element={<AllowancePage />} />
           <Route path="allowance/:childId" element={<AllowancePage />} />
           <Route path="parents" element={<ParentCentrePage />} />

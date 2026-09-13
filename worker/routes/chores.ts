@@ -106,11 +106,17 @@ app.get("/", async (c) => {
   const db = c.get("db");
   const familyId = c.get("user").familyId;
   const includeArchived = c.req.query("archived") === "1";
+  // ?assignedTo=<id> narrows to one person's chores, and `openToday` follows
+  // the filter with them. The scoreboard and the weekly total stay family-wide:
+  // those are the shared picture, and filtering them would be a different page.
+  const assignedTo = c.req.query("assignedTo");
+
+  const filters = [eq(chores.familyId, familyId)];
+  if (!includeArchived) filters.push(eq(chores.archived, false));
+  if (assignedTo) filters.push(eq(chores.assignedTo, assignedTo));
 
   const rows = await db.query.chores.findMany({
-    where: includeArchived
-      ? eq(chores.familyId, familyId)
-      : and(eq(chores.familyId, familyId), eq(chores.archived, false)),
+    where: and(...filters),
     orderBy: [asc(chores.dueDate), asc(chores.createdAt)],
   });
 

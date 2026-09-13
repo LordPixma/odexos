@@ -325,7 +325,17 @@ function ChildCard({
         </button>
 
         <Link
-          to="/chores"
+          to={`/merits/history/${child.id}`}
+          className="flex w-full items-center justify-between rounded-xl border border-white/5 bg-surface-2/60 px-3 py-2.5 transition hover:border-white/15"
+        >
+          <span className="flex items-center gap-2 text-sm text-slate-200">
+            <StarIcon size={15} /> Merit history
+          </span>
+          <span className="text-xs text-slate-400">Open</span>
+        </Link>
+
+        <Link
+          to={`/chores?assignedTo=${child.id}`}
           className="flex w-full items-center justify-between rounded-xl border border-white/5 bg-surface-2/60 px-3 py-2.5 transition hover:border-white/15"
         >
           <span className="flex items-center gap-2 text-sm text-slate-200">

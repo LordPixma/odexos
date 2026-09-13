@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useAllowance, useMeritBoard } from "../lib/queries";
+import { useAllowance, useChores, useMeritBoard } from "../lib/queries";
 import { Card, EmptyState, MemberAvatar, SectionHead } from "./ui";
 import EnableNotifications from "./EnableNotifications";
 import {
@@ -26,6 +26,8 @@ export default function ChildDashboard({ data }: { data: ChildDashboardData }) {
   const me = auth?.member;
   const { data: board } = useMeritBoard();
   const { data: allowance } = useAllowance(me?.id);
+  // choresOpen from the dashboard counts the whole family; this is just theirs.
+  const { data: myChores } = useChores(me?.id);
 
   const firstName = me?.nickname ?? me?.name.split(" ")[0] ?? "there";
   const memberById = useMemo(
@@ -43,11 +45,15 @@ export default function ChildDashboard({ data }: { data: ChildDashboardData }) {
       stat: "What's coming up",
     },
     {
-      to: "/chores",
-      label: "Chores",
+      // Straight to their own, not the whole family's board.
+      to: `/chores?assignedTo=${me?.id ?? ""}`,
+      label: "My chores",
       icon: <BroomIcon size={20} />,
       grad: ["#a855f7", "#7c3aed"] as [string, string],
-      stat: data.choresOpen > 0 ? `${data.choresOpen} to do` : "All caught up",
+      stat:
+        myChores && myChores.openToday > 0
+          ? `${myChores.openToday} to do`
+          : "All caught up",
     },
     {
       to: "/merits",
@@ -55,6 +61,13 @@ export default function ChildDashboard({ data }: { data: ChildDashboardData }) {
       icon: <StarIcon size={20} />,
       grad: ["#f59e0b", "#d97706"] as [string, string],
       stat: myTally ? `${myTally.net > 0 ? "+" : ""}${myTally.net} this week` : "This week",
+    },
+    {
+      to: `/merits/history/${me?.id ?? ""}`,
+      label: "My history",
+      icon: <ClockIcon size={20} />,
+      grad: ["#f472b6", "#db2777"] as [string, string],
+      stat: "Week by week",
     },
     {
       to: "/allowance",

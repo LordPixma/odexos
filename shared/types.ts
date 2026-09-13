@@ -503,6 +503,25 @@ export interface MeritTally {
   net: number;
 }
 
+/** One past week, for the history view. */
+export interface MeritWeek {
+  weekStart: string;
+  merits: number;
+  demerits: number;
+  net: number;
+  /** The ledger line that settled it, once the week has closed. */
+  settledCents: number | null;
+  inspection: { rating: number; note: string | null } | null;
+}
+
+export interface MeritHistory {
+  childId: string;
+  currency: string;
+  meritValueCents: number;
+  weeks: MeritWeek[]; // newest first
+  entries: Merit[]; // every merit in the window, newest first
+}
+
 export interface MeritBoard {
   weekStart: string;
   meritValueCents: number;

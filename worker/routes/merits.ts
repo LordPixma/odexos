@@ -1,12 +1,24 @@
 import { Hono } from "hono";
 import { and, desc, eq, gte } from "drizzle-orm";
-import { families, merits, users } from "../db/schema";
+import {
+  allowanceLedger,
+  families,
+  merits,
+  roomInspections,
+  users,
+} from "../db/schema";
 import { generateId } from "../lib/crypto";
-import { tallyFor, weekStartOf } from "../lib/allowance";
+import { previousWeek, tallyFor, weekStartOf } from "../lib/allowance";
 import { pushToUser } from "../lib/push";
 import type { AppEnv } from "../lib/types";
 import { badRequest, requireAmountCents, requireString } from "../lib/validate";
-import { isParent, type Merit, type MeritBoard } from "@shared/types";
+import {
+  isParent,
+  type Merit,
+  type MeritBoard,
+  type MeritHistory,
+  type MeritWeek,
+} from "@shared/types";
 
 const app = new Hono<AppEnv>();
 
@@ -91,6 +103,88 @@ app.get("/child/:childId", async (c) => {
     limit: 200,
   });
   return c.json({ merits: rows.map(toMerit) });
+});
+
+/**
+ * Week-by-week history for one child: the tallies, what each week settled at,
+ * and the room inspection that went with it. Same privacy rule as the board —
+ * merits are shared, so any family member can see them.
+ */
+app.get("/history/:childId", async (c) => {
+  const db = c.get("db");
+  const user = c.get("user");
+  const childId = c.req.param("childId");
+  await assertChild(db, user.familyId, childId);
+
+  const weeksBack = Math.min(
+    52,
+    Math.max(1, Number(c.req.query("weeks") ?? 12) || 12),
+  );
+
+  // The Mondays we care about, newest first.
+  const mondays: string[] = [];
+  let cursor = weekStartOf();
+  for (let i = 0; i < weeksBack; i++) {
+    mondays.push(cursor);
+    cursor = previousWeek(cursor);
+  }
+  const oldest = mondays[mondays.length - 1];
+
+  const entries = await db.query.merits.findMany({
+    where: and(eq(merits.childId, childId), gte(merits.weekStart, oldest)),
+    orderBy: [desc(merits.createdAt)],
+    limit: 500,
+  });
+  const ledger = await db.query.allowanceLedger.findMany({
+    where: and(
+      eq(allowanceLedger.childId, childId),
+      eq(allowanceLedger.kind, "weekly"),
+      gte(allowanceLedger.weekStart, oldest),
+    ),
+  });
+  const inspections = await db.query.roomInspections.findMany({
+    where: and(
+      eq(roomInspections.childId, childId),
+      gte(roomInspections.weekStart, oldest),
+    ),
+  });
+
+  const settledBy = new Map(ledger.map((l) => [l.weekStart, l.amountCents]));
+  const inspectionBy = new Map(inspections.map((i) => [i.weekStart, i]));
+
+  const family = await db.query.families.findFirst({
+    where: eq(families.id, user.familyId),
+  });
+
+  const weeks: MeritWeek[] = mondays.map((weekStart) => {
+    let up = 0;
+    let down = 0;
+    for (const e of entries) {
+      if (e.weekStart !== weekStart) continue;
+      if (e.value > 0) up += e.value;
+      else down += -e.value;
+    }
+    const inspection = inspectionBy.get(weekStart);
+    return {
+      weekStart,
+      merits: up,
+      demerits: down,
+      net: up - down,
+      settledCents: settledBy.get(weekStart) ?? null,
+      inspection: inspection
+        ? { rating: inspection.rating, note: inspection.note }
+        : null,
+    };
+  });
+
+  const history: MeritHistory = {
+    childId,
+    currency: family?.currency ?? "GBP",
+    meritValueCents: family?.meritValueCents ?? 50,
+    weeks,
+    entries: entries.map(toMerit),
+  };
+  return c.json(history);
 });
 
 /** Issue a merit (+1) or demerit (-1). Parents only, reason required. */
