@@ -11,16 +11,41 @@ import {
   badRequest,
   optionalDate,
   optionalString,
+  requireAmountCents,
   requireEmail,
   requireEnum,
   requireString,
 } from "../lib/validate";
-import { MEMBER_COLORS } from "@shared/types";
+import { MAX_PARENTS, MEMBER_COLORS, isParent } from "@shared/types";
 import type { Role } from "@shared/types";
 
-const ROLES: readonly Role[] = ["owner", "adult", "child", "member"];
+const ROLES: readonly Role[] = ["owner", "parent", "child", "member"];
 
 const members = new Hono<AppEnv>();
+
+/**
+ * A family has at most two parents, and the owner is one of them. Throws when
+ * adding another would exceed that — `exclude` skips the member being changed
+ * so promoting someone already counted doesn't trip over itself.
+ */
+async function assertParentSlotFree(
+  db: AppEnv["Variables"]["db"],
+  familyId: string,
+  exclude?: string,
+): Promise<void> {
+  const existing = await db.query.users.findMany({
+    where: eq(users.familyId, familyId),
+    columns: { id: true, role: true },
+  });
+  const parents = existing.filter(
+    (m) => isParent(m.role) && m.id !== exclude,
+  ).length;
+  if (parents >= MAX_PARENTS) {
+    badRequest(
+      `A family can have at most ${MAX_PARENTS} parents. Change one to a child or member first.`,
+    );
+  }
+}
 
 // List everyone in the family (active members + outstanding invites).
 members.get("/", async (c) => {
@@ -33,19 +58,20 @@ members.get("/", async (c) => {
   return c.json({ members: rows.map(toMember) });
 });
 
-// Invite a new family member by email (owners and adults only). Creates a
+// Invite a new family member by email (parents only). Creates a
 // pending account and emails them a link to set their own password.
 members.post("/", async (c) => {
   const db = c.get("db");
   const actor = c.get("user");
-  if (actor.role !== "owner" && actor.role !== "adult") {
-    return c.json({ error: "Only owners and adults can invite members" }, 403);
+  if (!isParent(actor.role)) {
+    return c.json({ error: "Only parents can invite members" }, 403);
   }
 
   const body = await c.req.json().catch(() => ({}));
   const name = requireString(body.name, "Name", { max: 120 });
   const email = requireEmail(body.email);
   const role = requireEnum(body.role, ROLES, "Role");
+  if (isParent(role)) await assertParentSlotFree(db, actor.familyId);
 
   const existing = await db.query.users.findFirst({
     where: eq(users.email, email),
@@ -95,15 +121,15 @@ members.post("/", async (c) => {
   );
 });
 
-// Resend the invite email for a pending member (owners and adults only).
+// Resend the invite email for a pending member (parents only).
 // Mints a fresh token so the previous link is invalidated.
 members.post("/:id/resend", async (c) => {
   const db = c.get("db");
   const actor = c.get("user");
   const id = c.req.param("id");
 
-  if (actor.role !== "owner" && actor.role !== "adult") {
-    return c.json({ error: "Only owners and adults can resend invites" }, 403);
+  if (!isParent(actor.role)) {
+    return c.json({ error: "Only parents can resend invites" }, 403);
   }
 
   const target = await db.query.users.findFirst({
@@ -144,7 +170,7 @@ members.patch("/:id", async (c) => {
   if (!target) return c.json({ error: "Member not found" }, 404);
 
   const isSelf = target.id === actor.id;
-  if (!isSelf && actor.role !== "owner" && actor.role !== "adult") {
+  if (!isSelf && !isParent(actor.role)) {
     return c.json({ error: "Not allowed" }, 403);
   }
 
@@ -156,7 +182,11 @@ members.patch("/:id", async (c) => {
     updates.color = optionalString(body.color, "Color", { max: 20 }) ?? target.color;
   if (body.role !== undefined) {
     if (actor.role !== "owner") badRequest("Only owners can change roles");
-    updates.role = requireEnum(body.role, ROLES, "Role");
+    const next = requireEnum(body.role, ROLES, "Role");
+    if (isParent(next) && !isParent(target.role)) {
+      await assertParentSlotFree(db, actor.familyId, target.id);
+    }
+    updates.role = next;
   }
   // --- personalisation ---
   if (body.nickname !== undefined)
@@ -165,6 +195,12 @@ members.patch("/:id", async (c) => {
     updates.pronouns = optionalString(body.pronouns, "Pronouns", { max: 40 });
   if (body.birthday !== undefined) {
     updates.birthday = optionalDate(body.birthday, "Birthday");
+  }
+  if (body.allowance !== undefined) {
+    if (!isParent(actor.role)) badRequest("Only parents can set an allowance");
+    const pence = requireAmountCents(body.allowance, "Allowance");
+    if (pence < 0) badRequest("An allowance cannot be negative");
+    updates.allowanceCents = pence;
   }
   if (body.notifyBudgetAlerts !== undefined)
     updates.notifyBudgetAlerts = Boolean(body.notifyBudgetAlerts);
@@ -179,7 +215,7 @@ members.patch("/:id", async (c) => {
 });
 
 // Remove a member, or revoke a pending invite.
-// - Revoking a pending invite: owners and adults.
+// - Revoking a pending invite: parents.
 // - Removing an active member: owners only. Cannot remove yourself.
 members.delete("/:id", async (c) => {
   const db = c.get("db");
@@ -192,8 +228,8 @@ members.delete("/:id", async (c) => {
   if (!target) return c.json({ error: "Member not found" }, 404);
 
   if (target.status === "invited") {
-    if (actor.role !== "owner" && actor.role !== "adult") {
-      return c.json({ error: "Only owners and adults can revoke invites" }, 403);
+    if (!isParent(actor.role)) {
+      return c.json({ error: "Only parents can revoke invites" }, 403);
     }
   } else {
     if (actor.role !== "owner") {
@@ -265,7 +301,7 @@ members.post("/:id/avatar", async (c) => {
   const id = c.req.param("id");
   const target = await familyMember(c, id);
   if (!target) return c.json({ error: "Member not found" }, 404);
-  if (target.id !== actor.id && actor.role !== "owner" && actor.role !== "adult") {
+  if (target.id !== actor.id && !isParent(actor.role)) {
     return c.json({ error: "Not allowed" }, 403);
   }
 
@@ -305,7 +341,7 @@ members.delete("/:id/avatar", async (c) => {
   const id = c.req.param("id");
   const target = await familyMember(c, id);
   if (!target) return c.json({ error: "Member not found" }, 404);
-  if (target.id !== actor.id && actor.role !== "owner" && actor.role !== "adult") {
+  if (target.id !== actor.id && !isParent(actor.role)) {
     return c.json({ error: "Not allowed" }, 403);
   }
 

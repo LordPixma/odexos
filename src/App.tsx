@@ -15,6 +15,9 @@ import MembersPage from "./pages/MembersPage";
 import ProfilePage from "./pages/ProfilePage";
 import ChoresPage from "./pages/ChoresPage";
 import CalendarPage from "./pages/CalendarPage";
+import MeritsPage from "./pages/MeritsPage";
+import AllowancePage from "./pages/AllowancePage";
+import ParentCentrePage from "./pages/ParentCentrePage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -49,6 +52,10 @@ export default function App() {
           <Route path="activities" element={<ActivitiesPage />} />
           <Route path="household" element={<HouseholdPage />} />
           <Route path="chores" element={<ChoresPage />} />
+          <Route path="merits" element={<MeritsPage />} />
+          <Route path="allowance" element={<AllowancePage />} />
+          <Route path="allowance/:childId" element={<AllowancePage />} />
+          <Route path="parents" element={<ParentCentrePage />} />
           <Route path="expenses" element={<ExpensesPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="budgets" element={<BudgetsPage />} />

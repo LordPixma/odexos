@@ -10,6 +10,7 @@ import type {
   ApplyRulesResult,
   BankConnection,
   Budget,
+  AllowanceOverview,
   BudgetsOverview,
   CalendarSubscription,
   CategoryRule,
@@ -25,6 +26,10 @@ import type {
   ListItem,
   ListWithItems,
   Meal,
+  MeritBoard,
+  ParentCentre,
+  RoomInspection,
+  SavingsPot,
   Member,
   NotificationsResponse,
   SpendingInsights,
@@ -683,5 +688,147 @@ export function useRotateCalendarLink() {
     mutationFn: () =>
       api.post<CalendarSubscription>("/calendar/subscription/rotate"),
     onSuccess: (data) => qc.setQueryData(["calendar-subscription"], data),
+  });
+}
+
+// ---- Merits ----
+export function useMeritBoard(week?: string) {
+  return useQuery({
+    queryKey: ["merits", week ?? "current"],
+    queryFn: () => api.get<MeritBoard>(`/merits${qs({ week })}`),
+  });
+}
+
+/** Merits move money, so anything showing a balance has to refresh with them. */
+function useInvalidateMerits() {
+  const qc = useQueryClient();
+  return () => {
+    qc.invalidateQueries({ queryKey: ["merits"] });
+    qc.invalidateQueries({ queryKey: ["allowance"] });
+    qc.invalidateQueries({ queryKey: ["parent-centre"] });
+  };
+}
+
+export function useIssueMerit() {
+  const invalidate = useInvalidateMerits();
+  return useMutation({
+    mutationFn: (body: { childId: string; value: 1 | -1; note: string }) =>
+      api.post("/merits", body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteMerit() {
+  const invalidate = useInvalidateMerits();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/merits/${id}`),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetMeritRate() {
+  const invalidate = useInvalidateMerits();
+  return useMutation({
+    mutationFn: (meritValue: number) => api.patch("/merits/rate", { meritValue }),
+    onSuccess: invalidate,
+  });
+}
+
+// ---- Allowance, pots and balances ----
+export function useAllowance(childId: string | undefined) {
+  return useQuery({
+    queryKey: ["allowance", childId],
+    queryFn: () => api.get<AllowanceOverview>(`/allowance/${childId}`),
+    enabled: Boolean(childId),
+  });
+}
+
+function useInvalidateAllowance(childId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    qc.invalidateQueries({ queryKey: ["allowance", childId] });
+    qc.invalidateQueries({ queryKey: ["parent-centre"] });
+  };
+}
+
+export function useRecordPayout(childId: string | undefined) {
+  const invalidate = useInvalidateAllowance(childId);
+  return useMutation({
+    mutationFn: (body: { amount: number; note?: string }) =>
+      api.post(`/allowance/${childId}/payout`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useAdjustAllowance(childId: string | undefined) {
+  const invalidate = useInvalidateAllowance(childId);
+  return useMutation({
+    mutationFn: (body: { amount: number; note: string }) =>
+      api.post(`/allowance/${childId}/adjust`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateBankBalance(childId: string | undefined) {
+  const invalidate = useInvalidateAllowance(childId);
+  return useMutation({
+    mutationFn: (body: { balance: number; note?: string }) =>
+      api.post(`/allowance/${childId}/balance`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useCreatePot(childId: string | undefined) {
+  const invalidate = useInvalidateAllowance(childId);
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      api.post<{ pot: SavingsPot }>(`/allowance/${childId}/pots`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdatePot(childId: string | undefined) {
+  const invalidate = useInvalidateAllowance(childId);
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
+      api.patch<{ pot: SavingsPot }>(`/allowance/${childId}/pots/${id}`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeletePot(childId: string | undefined) {
+  const invalidate = useInvalidateAllowance(childId);
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/allowance/${childId}/pots/${id}`),
+    onSuccess: invalidate,
+  });
+}
+
+// ---- Parent Centre ----
+export function useParentCentre() {
+  return useQuery({
+    queryKey: ["parent-centre"],
+    queryFn: () => api.get<ParentCentre>("/parents"),
+  });
+}
+
+export function useRecordInspection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { childId: string; rating: number; note?: string }) =>
+      api.post<{ inspection: RoomInspection }>("/parents/inspections", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["parent-centre"] }),
+  });
+}
+
+export function useSetAllowanceRate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, allowance }: { id: string; allowance: number }) =>
+      api.patch(`/members/${id}`, { allowance }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["parent-centre"] });
+      qc.invalidateQueries({ queryKey: ["allowance"] });
+    },
   });
 }

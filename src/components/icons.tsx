@@ -221,3 +221,59 @@ export function PhoneIcon({ className = "", size = 20 }: IconProps) {
     </svg>
   );
 }
+
+export function StarIcon({ className = "", size = 20 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.4l6.1-.9L12 3Z" />
+    </svg>
+  );
+}
+
+export function PiggyIcon({ className = "", size = 20 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 12a6 6 0 0 1 6-6h3a6 6 0 0 1 5.6 3.9l1.7.9a1 1 0 0 1 .5.9v1.7a1 1 0 0 1-1 1h-1.3A6 6 0 0 1 16 17v2h-3v-1.3a6.4 6.4 0 0 1-2 0V19H8v-2.2A6 6 0 0 1 4 12Z" />
+      <path d="M9 10h.01" />
+    </svg>
+  );
+}
+
+export function ShieldIcon({ className = "", size = 20 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 3 5 6v5.5c0 4.2 2.9 8.1 7 9.5 4.1-1.4 7-5.3 7-9.5V6l-7-3Z" />
+      <path d="m9.5 12 1.8 1.8 3.4-3.6" />
+    </svg>
+  );
+}

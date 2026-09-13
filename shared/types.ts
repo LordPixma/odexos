@@ -2,7 +2,18 @@
 // and the React frontend. Keep this file free of any runtime dependencies so
 // it can be imported from either side.
 
-export type Role = "owner" | "adult" | "child" | "member";
+export type Role = "owner" | "parent" | "child" | "member";
+
+/**
+ * Parents run the house: they issue merits, set allowances and see everyone's
+ * money. The owner is a parent too — they created the family — which is why
+ * the cap of two counts them.
+ */
+export const MAX_PARENTS = 2;
+
+export function isParent(role: Role): boolean {
+  return role === "owner" || role === "parent";
+}
 
 export type MemberStatus = "active" | "invited";
 
@@ -450,6 +461,126 @@ export interface ChoresOverview {
   doneThisWeek: number;
   openToday: number;
   scores: ChoreScore[];
+}
+
+
+// ---- Merits, allowance and savings ----
+
+export interface Merit {
+  id: string;
+  childId: string;
+  value: 1 | -1;
+  note: string;
+  weekStart: string; // YYYY-MM-DD, Monday
+  issuedBy: string | null;
+  createdAt: string;
+}
+
+/** Per-child tally for one week. Visible to the whole family. */
+export interface MeritTally {
+  childId: string;
+  merits: number;
+  demerits: number;
+  net: number;
+}
+
+export interface MeritBoard {
+  weekStart: string;
+  meritValueCents: number;
+  currency: string;
+  tallies: MeritTally[];
+  recent: Merit[]; // latest entries across the family, newest first
+}
+
+export type LedgerKind = "weekly" | "payout" | "adjustment";
+
+export interface LedgerEntry {
+  id: string;
+  kind: LedgerKind;
+  amountCents: number; // signed
+  weekStart: string | null;
+  baseCents: number | null;
+  meritCount: number | null;
+  demeritCount: number | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface SavingsPot {
+  id: string;
+  childId: string;
+  name: string;
+  balanceCents: number;
+  targetCents: number | null;
+  color: string;
+  updatedAt: string;
+}
+
+/** Hard cap per child, so the page stays a list and not a filing cabinet. */
+export const MAX_SAVINGS_POTS = 10;
+
+export interface BalanceCheck {
+  id: string;
+  weekStart: string;
+  balanceCents: number;
+  note: string | null;
+  createdAt: string;
+}
+
+/** Everything one child's allowance page needs. Private to them and parents. */
+export interface AllowanceOverview {
+  child: { id: string; name: string; nickname: string | null; color: string; avatarVersion: number };
+  currency: string;
+  allowanceCents: number; // the weekly rate
+  meritValueCents: number;
+  balanceCents: number; // running total; negative = owed back
+  thisWeek: {
+    weekStart: string;
+    merits: number;
+    demerits: number;
+    meritCents: number;
+    projectedCents: number; // what this week will settle at
+  };
+  ledger: LedgerEntry[];
+  pots: SavingsPot[];
+  potsTotalCents: number;
+  bankBalanceCents: number | null;
+  bankUpdatedAt: string | null;
+  /** True when this week's balance hasn't been reported yet. */
+  needsBalanceUpdate: boolean;
+}
+
+export interface RoomInspection {
+  id: string;
+  childId: string;
+  weekStart: string;
+  rating: number; // 1-5
+  note: string | null;
+  createdAt: string;
+}
+
+/** The Parent Centre's at-a-glance view of one child. */
+export interface ChildSummary {
+  id: string;
+  name: string;
+  nickname: string | null;
+  color: string;
+  avatarVersion: number;
+  allowanceCents: number;
+  balanceCents: number;
+  thisWeek: { merits: number; demerits: number; net: number };
+  inspection: RoomInspection | null;
+  choresOpen: number;
+  potsTotalCents: number;
+  bankBalanceCents: number | null;
+  needsBalanceUpdate: boolean;
+}
+
+export interface ParentCentre {
+  weekStart: string;
+  currency: string;
+  meritValueCents: number;
+  children: ChildSummary[];
 }
 
 // ---- Notifications & family settings ----

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useDashboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
+import { isParent } from "@shared/types";
 import { Card, EmptyState, MemberAvatar, PageLoader } from "../components/ui";
 import {
   BroomIcon,
@@ -8,6 +9,8 @@ import {
   ChartIcon,
   ClipboardIcon,
   ClockIcon,
+  ShieldIcon,
+  StarIcon,
   ReceiptIcon,
   TargetIcon,
   UsersIcon,
@@ -281,6 +284,8 @@ export default function DashboardPage() {
   // Section nav cards (replace the old sidebar menu).
   const alertsCount = data.budgetAlerts.length;
   const memberCount = data.members.length;
+  const parent = auth ? isParent(auth.member.role) : false;
+
   const navItems: {
     to: string;
     label: string;
@@ -301,6 +306,13 @@ export default function DashboardPage() {
       icon: <ClockIcon size={20} />,
       grad: ["#0ea5e9", "#2563eb"],
       stat: `${data.todayActivities.length} today · ${data.upcomingActivities.length} soon`,
+    },
+    {
+      to: "/merits",
+      label: "Merits",
+      icon: <StarIcon size={20} />,
+      grad: ["#f59e0b", "#d97706"],
+      stat: "Points & allowance",
     },
     {
       to: "/chores",
@@ -355,6 +367,25 @@ export default function DashboardPage() {
       stat: `${memberCount} member${memberCount === 1 ? "" : "s"}`,
     },
   ];
+
+  // The Parent Centre is the one card not everyone gets.
+  if (parent) {
+    navItems.push({
+      to: "/parents",
+      label: "Parent Centre",
+      icon: <ShieldIcon size={20} />,
+      grad: ["#8b5cf6", "#6d28d9"],
+      stat: "Merits, rooms, money",
+    });
+  } else if (auth?.member.role === "child") {
+    navItems.push({
+      to: "/allowance",
+      label: "My allowance",
+      icon: <StarIcon size={20} />,
+      grad: ["#10b981", "#059669"],
+      stat: "Balance & pots",
+    });
+  }
 
   return (
     <div className="space-y-6">

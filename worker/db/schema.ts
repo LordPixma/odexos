@@ -24,6 +24,12 @@ export const families = sqliteTable("families", {
   // Secret that authenticates the public ICS feed. Null until someone asks for
   // the subscribe link; rotating it invalidates every existing subscription.
   calendarToken: text("calendar_token").unique(),
+  // What one merit is worth, in pence. Configurable so the rate can change
+  // without a deploy.
+  meritValueCents: integer("merit_value_cents").notNull().default(50),
+  // Monday (YYYY-MM-DD) of the last week settled into the allowance ledger,
+  // so a week is never posted twice.
+  lastAllowanceWeek: text("last_allowance_week"),
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 
@@ -39,7 +45,7 @@ export const users = sqliteTable(
     email: text("email").notNull().unique(),
     // Empty for a member who was invited but hasn't accepted yet.
     passwordHash: text("password_hash").notNull(),
-    role: text("role", { enum: ["owner", "adult", "child", "member"] })
+    role: text("role", { enum: ["owner", "parent", "child", "member"] })
       .notNull()
       .default("member"),
     color: text("color").notNull().default("#6366f1"),
@@ -60,6 +66,8 @@ export const users = sqliteTable(
     birthday: text("birthday"), // YYYY-MM-DD
     // 0 = no photo; bumped on every upload so <img> URLs cache-bust.
     avatarVersion: integer("avatar_version").notNull().default(0),
+    // Base weekly allowance in pence, for children. Merits are added on top.
+    allowanceCents: integer("allowance_cents").notNull().default(0),
     notifyBudgetAlerts: integer("notify_budget_alerts", { mode: "boolean" })
       .notNull()
       .default(true),
@@ -580,6 +588,156 @@ export const pushSubscriptions = sqliteTable(
   }),
 );
 
+// --- Merits, allowance and savings (the children's side of the house) ---
+
+// A single merit (+1) or demerit (-1), always with a reason attached.
+// `weekStart` is the Monday the entry counts toward, fixed at issue time so a
+// late correction can't quietly move money between weeks.
+export const merits = sqliteTable(
+  "merits",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    childId: text("child_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    value: integer("value").notNull(), // +1 or -1
+    note: text("note").notNull(),
+    weekStart: text("week_start").notNull(), // YYYY-MM-DD, Monday
+    issuedBy: text("issued_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    childWeekIdx: index("merits_child_week_idx").on(t.childId, t.weekStart),
+    familyIdx: index("merits_family_idx").on(t.familyId, t.createdAt),
+  }),
+);
+
+/**
+ * Append-only money ledger, one row per event. A child's balance is the sum of
+ * its amounts, which is what makes a bad week carry forward: a negative weekly
+ * line simply leaves the running total short until it's earned back.
+ */
+export const allowanceLedger = sqliteTable(
+  "allowance_ledger",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    childId: text("child_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["weekly", "payout", "adjustment"] })
+      .notNull()
+      .default("weekly"),
+    amountCents: integer("amount_cents").notNull(), // signed
+    // Set on "weekly" rows; the unique index below stops a week posting twice.
+    weekStart: text("week_start"),
+    baseCents: integer("base_cents"), // the allowance rate used that week
+    meritCount: integer("merit_count"),
+    demeritCount: integer("demerit_count"),
+    note: text("note"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    childIdx: index("allowance_ledger_child_idx").on(t.childId, t.createdAt),
+    weeklyUnique: uniqueIndex("allowance_ledger_weekly_unique").on(
+      t.childId,
+      t.kind,
+      t.weekStart,
+    ),
+  }),
+);
+
+// A child's savings pots. Capped at 10 each, enforced in the route.
+export const savingsPots = sqliteTable(
+  "savings_pots",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    childId: text("child_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    balanceCents: integer("balance_cents").notNull().default(0),
+    targetCents: integer("target_cents"), // null = saving with no goal
+    color: text("color").notNull().default("#6366f1"),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    childIdx: index("savings_pots_child_idx").on(t.childId),
+  }),
+);
+
+/**
+ * A child's own reading of their bank balance. Their accounts can't be linked,
+ * so this is self-reported weekly — history rather than a single field, so the
+ * trend is visible and a correction doesn't erase what was said before.
+ */
+export const balanceChecks = sqliteTable(
+  "balance_checks",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    childId: text("child_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    weekStart: text("week_start").notNull(), // YYYY-MM-DD, Monday
+    balanceCents: integer("balance_cents").notNull(),
+    note: text("note"),
+    recordedBy: text("recorded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    childWeekUnique: uniqueIndex("balance_checks_child_week_unique").on(
+      t.childId,
+      t.weekStart,
+    ),
+  }),
+);
+
+// Weekly room inspection: a 1-5 rating and a note, one per child per week.
+export const roomInspections = sqliteTable(
+  "room_inspections",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    childId: text("child_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    weekStart: text("week_start").notNull(), // YYYY-MM-DD, Monday
+    rating: integer("rating").notNull(), // 1-5
+    note: text("note"),
+    inspectedBy: text("inspected_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  },
+  (t) => ({
+    childWeekUnique: uniqueIndex("room_inspections_child_week_unique").on(
+      t.childId,
+      t.weekStart,
+    ),
+  }),
+);
+
 export type FamilyRow = typeof families.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type MemberAvatarRow = typeof memberAvatars.$inferSelect;
@@ -598,3 +756,8 @@ export type NotificationRow = typeof notifications.$inferSelect;
 export type ChoreRow = typeof chores.$inferSelect;
 export type ChoreCompletionRow = typeof choreCompletions.$inferSelect;
 export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
+export type MeritRow = typeof merits.$inferSelect;
+export type AllowanceLedgerRow = typeof allowanceLedger.$inferSelect;
+export type SavingsPotRow = typeof savingsPots.$inferSelect;
+export type BalanceCheckRow = typeof balanceChecks.$inferSelect;
+export type RoomInspectionRow = typeof roomInspections.$inferSelect;

@@ -7,6 +7,7 @@ import { syncConnection } from "./lib/bank";
 import { checkBudgetAlerts } from "./lib/notifications";
 import { sendDigest } from "./lib/digest";
 import { sendBirthdayReminders } from "./lib/birthdays";
+import { promptBalanceUpdates, settleLastWeek } from "./lib/allowance";
 
 const WEEKLY_DIGEST_CRON = "0 7 * * 1"; // Monday 07:00 UTC
 const BIRTHDAY_CRON = "30 7 * * *"; // Daily 07:30 UTC
@@ -22,6 +23,9 @@ import choreRoutes from "./routes/chores";
 import notificationRoutes from "./routes/notifications";
 import calendarRoutes, { calendarFeed } from "./routes/calendar";
 import pushRoutes from "./routes/push";
+import meritRoutes from "./routes/merits";
+import allowanceRoutes from "./routes/allowance";
+import parentRoutes from "./routes/parents";
 import familyRoutes from "./routes/family";
 
 const app = new Hono<AppEnv>();
@@ -41,6 +45,15 @@ app.use("*", async (c, next) => {
   const from = new URL(c.req.url);
   const to = new URL(canonical);
   if (from.host === to.host) return next();
+  // Never redirect local development off to production.
+  if (
+    from.hostname === "localhost" ||
+    from.hostname === "127.0.0.1" ||
+    from.hostname === "[::1]" ||
+    from.hostname.endsWith(".localhost")
+  ) {
+    return next();
+  }
 
   to.pathname = from.pathname;
   to.search = from.search;
@@ -78,6 +91,9 @@ app.route("/api/chores", choreRoutes);
 app.route("/api/notifications", notificationRoutes);
 app.route("/api/calendar", calendarRoutes);
 app.route("/api/push", pushRoutes);
+app.route("/api/merits", meritRoutes);
+app.route("/api/allowance", allowanceRoutes);
+app.route("/api/parents", parentRoutes);
 app.route("/api/family", familyRoutes);
 app.route("/api/dashboard", dashboardRoutes);
 
@@ -117,10 +133,21 @@ async function scheduled(
     return;
   }
 
-  // Weekly family digest (Monday morning).
+  // Monday morning: close off last week's allowance, ask the children for a
+  // fresh balance, then send the digest.
   if (controller.cron === WEEKLY_DIGEST_CRON) {
     const digestFamilies = await db.query.families.findMany();
     for (const fam of digestFamilies) {
+      try {
+        await settleLastWeek(db, env, fam.id);
+      } catch (err) {
+        console.error(`Allowance settlement failed for ${fam.id}:`, err);
+      }
+      try {
+        await promptBalanceUpdates(db, env, fam.id);
+      } catch (err) {
+        console.error(`Balance prompt failed for ${fam.id}:`, err);
+      }
       try {
         await sendDigest(db, env, fam.id, false);
       } catch (err) {

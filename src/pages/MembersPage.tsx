@@ -23,7 +23,7 @@ import { EditIcon, PlusIcon, TrashIcon, UsersIcon } from "../components/icons";
 import AvatarPicker from "../components/AvatarPicker";
 import { ApiError } from "../lib/api";
 import { ROLE_LABELS } from "../lib/labels";
-import { MEMBER_COLORS } from "@shared/types";
+import { MEMBER_COLORS, isParent } from "@shared/types";
 import type { Member, Role } from "@shared/types";
 
 
@@ -43,7 +43,7 @@ function emptyForm(): FormState {
   return {
     name: "",
     email: "",
-    role: "adult",
+    role: "parent",
     color: MEMBER_COLORS[0],
     nickname: "",
     pronouns: "",
@@ -56,7 +56,7 @@ const PRONOUN_OPTIONS = ["", "she/her", "he/him", "they/them"];
 export default function MembersPage() {
   const { auth } = useAuth();
   const { data: members, isLoading } = useMembers();
-  const canManage = auth?.member.role === "owner" || auth?.member.role === "adult";
+  const canManage = auth ? isParent(auth.member.role) : false;
   const isOwner = auth?.member.role === "owner";
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -341,7 +341,7 @@ export default function MembersPage() {
                 onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
                 disabled={editing ? !isOwner : false}
               >
-                <option value="adult">Adult</option>
+                <option value="parent">Parent</option>
                 <option value="child">Child</option>
                 <option value="member">Member</option>
                 <option value="owner">Owner</option>

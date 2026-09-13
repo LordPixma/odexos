@@ -7,7 +7,7 @@ import type {
 
 export const ROLE_LABELS: Record<Role, string> = {
   owner: "Owner",
-  adult: "Adult",
+  parent: "Parent",
   child: "Child",
   member: "Member",
 };

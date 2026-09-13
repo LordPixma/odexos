@@ -6,6 +6,7 @@ import { generateToken } from "../lib/crypto";
 import { buildFamilyFeed } from "../lib/ics";
 import { toActivity, toMember } from "../lib/serialize";
 import { appOrigin } from "../lib/bank";
+import { isParent } from "@shared/types";
 import type { AppEnv, Bindings } from "../lib/types";
 import type { Context } from "hono";
 
@@ -127,7 +128,7 @@ app.get("/subscription", async (c) => {
 app.post("/subscription/rotate", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
-  if (user.role !== "owner" && user.role !== "adult") {
+  if (!isParent(user.role)) {
     return c.json({ error: "Only owners and adults can reset the link" }, 403);
   }
   const token = generateToken();

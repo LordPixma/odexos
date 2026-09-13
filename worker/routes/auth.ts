@@ -71,6 +71,7 @@ auth.post("/register", async (c) => {
     pronouns: null,
     birthday: null,
     avatarVersion: 0,
+    allowanceCents: 0,
     notifyBudgetAlerts: true,
     notifyWeeklyDigest: true,
     createdAt: new Date().toISOString(),

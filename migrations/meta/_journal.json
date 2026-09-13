@@ -113,6 +113,13 @@
       "when": 1789183723935,
       "tag": "0015_push_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1789279602726,
+      "tag": "0016_merits_allowance",
+      "breakpoints": true
     }
   ]
 }
