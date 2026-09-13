@@ -14,7 +14,10 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    // The Worker needs to see page navigations too, so it can send the old
+    // workers.dev address to the canonical domain. Hashed build assets are
+    // immutable and by far the most-requested, so they skip the Worker.
+    "run_worker_first": ["/*", "!/assets/*"]
   },
   // Cloudflare D1 (SQLite) — the family database.
   // The binding stays "DB" (the code uses env.DB); database_id is this

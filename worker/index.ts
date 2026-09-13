@@ -26,6 +26,27 @@ import familyRoutes from "./routes/family";
 
 const app = new Hono<AppEnv>();
 
+/**
+ * One home. The Worker answers on its workers.dev address as well as the
+ * custom domain, and two live origins means split sessions, two service-worker
+ * registrations and two sets of push subscriptions for the same family.
+ *
+ * 308 rather than 301 so a POST stays a POST — a 301 would silently turn an
+ * API call into a GET.
+ */
+app.use("*", async (c, next) => {
+  const canonical = c.env.APP_URL;
+  if (!canonical) return next();
+
+  const from = new URL(c.req.url);
+  const to = new URL(canonical);
+  if (from.host === to.host) return next();
+
+  to.pathname = from.pathname;
+  to.search = from.search;
+  return c.redirect(to.toString(), 308);
+});
+
 // Every API request gets a Drizzle client bound to D1.
 app.use("/api/*", withDb);
 
