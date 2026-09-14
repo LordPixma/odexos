@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import type { Context } from "hono";
 import type { Db } from "../../db/client";
 import { accounts, bankConnections, transactions } from "../../db/schema";
@@ -189,10 +189,19 @@ export async function syncConnection(
     const accessToken = await ensureAccessToken(db, env, provider, connection);
     const providerAccounts = await provider.fetchAccounts(accessToken);
 
+    // Disconnecting detaches accounts rather than deleting them, so their
+    // balances survive as manual entries. A reconnect therefore has to
+    // recognise its own orphans — matching only on this connection's id means
+    // every account comes back a second time, which is what it used to do.
     const existing = await db.query.accounts.findMany({
-      where: eq(accounts.connectionId, connection.id),
+      where: and(
+        eq(accounts.familyId, connection.familyId),
+        or(eq(accounts.connectionId, connection.id), isNull(accounts.connectionId)),
+      ),
     });
-    const byRef = new Map(existing.map((a) => [a.externalRef, a]));
+    const byRef = new Map(
+      existing.filter((a) => a.externalRef).map((a) => [a.externalRef, a]),
+    );
     const now = new Date().toISOString();
 
     // Map each provider account to its OdexOS account id as we upsert balances.
@@ -209,6 +218,9 @@ export async function syncConnection(
             institution: pa.institution,
             type: pa.type,
             lastSyncedAt: now,
+            // Re-adopt an orphan; a no-op for one already on this connection.
+            connectionId: connection.id,
+            provider: connection.provider,
           })
           .where(eq(accounts.id, match.id));
         updated++;
@@ -252,8 +264,11 @@ export async function syncConnection(
     // Balances still synced, so the connection is healthy — but say so when no
     // transactions came through, rather than reporting a clean success.
     // Group by reason: listing the same message per account is just noise.
+    // Reported whenever anything failed, not only when everything did: once
+    // one account returns transactions, a second still refusing them is
+    // exactly the kind of thing that should not go quiet.
     let note: string | null = null;
-    if (failures.length > 0 && transactionsAdded === 0) {
+    if (failures.length > 0) {
       const counts = new Map<string, number>();
       for (const f of failures) counts.set(f, (counts.get(f) ?? 0) + 1);
       const reasons = [...counts.entries()]
@@ -263,7 +278,11 @@ export async function syncConnection(
       const reconnect = failures.some((f) => f.includes("hasn't granted"))
         ? " Reconnect the bank and allow access to transactions."
         : "";
-      note = `Balances synced, but no transactions — ${reasons}.${reconnect}`;
+      const n = failures.length;
+      note =
+        transactionsAdded === 0
+          ? `Balances synced, but no transactions — ${reasons}.${reconnect}`
+          : `Synced, but ${n} account${n === 1 ? "" : "s"} wouldn't share transactions — ${reasons}.${reconnect}`;
     }
 
     await db
