@@ -121,6 +121,7 @@ export const activities = sqliteTable(
     title: text("title").notNull(),
     category: text("category", {
       enum: [
+        "school",
         "school_run",
         "club",
         "meeting",
@@ -141,7 +142,7 @@ export const activities = sqliteTable(
     }),
     notes: text("notes"),
     recurrence: text("recurrence", {
-      enum: ["none", "daily", "weekdays", "weekly", "monthly"],
+      enum: ["none", "daily", "weekdays", "weekly", "fortnightly", "monthly"],
     })
       .notNull()
       .default("none"),

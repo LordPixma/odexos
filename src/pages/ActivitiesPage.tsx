@@ -46,6 +46,7 @@ const RECURRENCE_SHORT: Record<RecurrenceRule, string> = {
   daily: "Daily",
   weekdays: "Weekdays",
   weekly: "Weekly",
+  fortnightly: "Fortnightly",
   monthly: "Monthly",
 };
 

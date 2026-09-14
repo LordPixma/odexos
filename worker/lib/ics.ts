@@ -12,6 +12,7 @@ import type {
   RecurrenceRule,
 } from "@shared/types";
 import { ACTIVITY_CATEGORY_LABELS } from "@shared/types";
+import { DEFAULT_TZ as FEED_TZ } from "./recurrence";
 
 export interface IcsChore {
   id: string;
@@ -76,6 +77,56 @@ function utcStamp(iso: string): string {
   return new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
 
+/**
+ * Local wall-clock form: 20260914T083500, to be read with ;TZID=.
+ *
+ * A repeating event pinned to a UTC instant slides an hour at the clock
+ * change in whoever subscribes to it, so timed events name their zone and
+ * carry the definition below rather than being flattened to Z.
+ */
+function localStamp(iso: string, tz: string): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(iso));
+  const v = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  const hour = String(Number(v("hour")) % 24).padStart(2, "0");
+  return `${v("year")}${v("month")}${v("day")}T${hour}${v("minute")}${v("second")}`;
+}
+
+/**
+ * Europe/London under the EU rules still in force: BST from 01:00 UTC on the
+ * last Sunday in March, GMT from 02:00 local on the last Sunday in October.
+ * Written out because RFC 5545 requires the definition to travel with the
+ * feed — a bare TZID is a name some clients decline to guess at.
+ */
+const VTIMEZONE_LONDON = [
+  "BEGIN:VTIMEZONE",
+  "TZID:Europe/London",
+  "X-LIC-LOCATION:Europe/London",
+  "BEGIN:DAYLIGHT",
+  "TZOFFSETFROM:+0000",
+  "TZOFFSETTO:+0100",
+  "TZNAME:BST",
+  "DTSTART:19700329T010000",
+  "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+  "END:DAYLIGHT",
+  "BEGIN:STANDARD",
+  "TZOFFSETFROM:+0100",
+  "TZOFFSETTO:+0000",
+  "TZNAME:GMT",
+  "DTSTART:19701025T020000",
+  "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+  "END:STANDARD",
+  "END:VTIMEZONE",
+];
+
 /** Date-only form: 20260912. */
 function dateStamp(ymd: string): string {
   return ymd.replace(/-/g, "");
@@ -104,6 +155,7 @@ const ACTIVITY_RRULE: Record<RecurrenceRule, string | null> = {
   daily: "FREQ=DAILY",
   weekdays: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
   weekly: "FREQ=WEEKLY",
+  fortnightly: "FREQ=WEEKLY;INTERVAL=2",
   monthly: "FREQ=MONTHLY",
 };
 
@@ -152,6 +204,7 @@ export function buildFamilyFeed(opts: BuildFeedOptions): string {
   // Both spellings: Apple reads REFRESH-INTERVAL, Outlook X-PUBLISHED-TTL.
   l.add("REFRESH-INTERVAL", "PT1H", ";VALUE=DURATION");
   l.add("X-PUBLISHED-TTL", "PT1H");
+  for (const line of VTIMEZONE_LONDON) l.raw(line);
 
   for (const a of activities) {
     if (Number.isNaN(new Date(a.startsAt).getTime())) continue;
@@ -166,8 +219,9 @@ export function buildFamilyFeed(opts: BuildFeedOptions): string {
       l.add("DTSTART", dateStamp(day), ";VALUE=DATE");
       l.add("DTEND", dateStamp(nextDay(a.endsAt?.slice(0, 10) ?? day)), ";VALUE=DATE");
     } else {
-      l.add("DTSTART", utcStamp(a.startsAt));
-      if (a.endsAt) l.add("DTEND", utcStamp(a.endsAt));
+      const p = `;TZID=${FEED_TZ}`;
+      l.add("DTSTART", localStamp(a.startsAt, FEED_TZ), p);
+      if (a.endsAt) l.add("DTEND", localStamp(a.endsAt, FEED_TZ), p);
     }
 
     const rule = ACTIVITY_RRULE[a.recurrence];

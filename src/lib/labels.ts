@@ -15,6 +15,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 // A cohesive, slightly-muted categorical palette that sits well with the
 // jade/honey brand.
 export const ACTIVITY_COLORS: Record<ActivityCategory, string> = {
+  school: "#1d4ed8",
   school_run: "#2f74e0",
   club: "#7c5cf5",
   meeting: "#e0930f",

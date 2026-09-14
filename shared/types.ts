@@ -79,6 +79,7 @@ export interface AuthState {
 }
 
 export const ACTIVITY_CATEGORIES = [
+  "school",
   "school_run",
   "club",
   "meeting",
@@ -90,6 +91,7 @@ export const ACTIVITY_CATEGORIES = [
 export type ActivityCategory = (typeof ACTIVITY_CATEGORIES)[number];
 
 export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
+  school: "School",
   school_run: "School run",
   club: "Club",
   meeting: "Meeting",
@@ -104,6 +106,7 @@ export const RECURRENCE_RULES = [
   "daily",
   "weekdays",
   "weekly",
+  "fortnightly",
   "monthly",
 ] as const;
 export type RecurrenceRule = (typeof RECURRENCE_RULES)[number];
@@ -113,6 +116,7 @@ export const RECURRENCE_LABELS: Record<RecurrenceRule, string> = {
   daily: "Every day",
   weekdays: "Every weekday (Mon–Fri)",
   weekly: "Every week",
+  fortnightly: "Every two weeks",
   monthly: "Every month",
 };
 
