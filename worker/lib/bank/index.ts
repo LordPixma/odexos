@@ -199,9 +199,17 @@ export async function syncConnection(
         or(eq(accounts.connectionId, connection.id), isNull(accounts.connectionId)),
       ),
     });
-    const byRef = new Map(
-      existing.filter((a) => a.externalRef).map((a) => [a.externalRef, a]),
-    );
+    const byRef = new Map<string, (typeof existing)[number]>();
+    for (const a of existing) {
+      if (!a.externalRef) continue;
+      const held = byRef.get(a.externalRef);
+      // Where a detached account and a live one share a reference — the state
+      // a duplicating reconnect leaves behind — the live one wins, so a sync
+      // updates the row the transactions actually hang off.
+      if (!held || (!held.connectionId && a.connectionId)) {
+        byRef.set(a.externalRef, a);
+      }
+    }
     const now = new Date().toISOString();
 
     // Map each provider account to its OdexOS account id as we upsert balances.
