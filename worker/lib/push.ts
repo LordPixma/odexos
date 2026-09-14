@@ -375,10 +375,23 @@ export async function pushToFamily(
       const result = await sendPush(env, sub, message);
       if (result.ok) {
         sent++;
+        // Stamped so this table records real deliveries, not just taps of the
+        // test button. Without it a cron push that never arrives looks exactly
+        // like one that was never sent.
+        await db
+          .update(pushSubscriptions)
+          .set({ lastUsedAt: new Date().toISOString() })
+          .where(eq(pushSubscriptions.id, sub.id));
       } else if (result.gone) {
         await db
           .delete(pushSubscriptions)
           .where(eq(pushSubscriptions.id, sub.id));
+      } else {
+        // A push service that refuses is worth saying out loud; this runs on a
+        // cron with nobody watching the response.
+        console.error(
+          `Push to ${sub.userId} failed (${result.status}): ${result.error.slice(0, 200)}`,
+        );
       }
     }
     return sent;
